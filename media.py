@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import subprocess
 
@@ -35,7 +36,7 @@ class Media(object):
         """
         # 确定存储位置
         self.target = os.path.join(folder, self.name)
-        print(f'正在将 {self.url} 下载到 {self.target} ...')
+        print(f'正在将 {self.name} 下载到 {self.target} ...')
 
         # 启动下载
         content = session.get(url=self.url, stream=True)
@@ -53,8 +54,11 @@ class MediaCollection(list):
     def download(self, session: requests.Session, folder: str):
         """下载资源列表当中的所有资源"""
         self.folder = folder
-        for media in self:
-            media.download(session, folder)
+        with ThreadPoolExecutor() as pool:
+            futures = [
+                pool.submit(item.download, session, folder) for item in self
+            ]
+            list(as_completed(futures))
 
     def __str__(self):
         """用更加漂亮的方式打印资源列表"""
