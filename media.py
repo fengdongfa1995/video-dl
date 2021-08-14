@@ -1,8 +1,9 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import asyncio
 import os
 import subprocess
 
 from prettytable import PrettyTable
+import aiofiles
 import requests
 
 from toolbox import CONFIG
@@ -28,7 +29,7 @@ class Media(object):
         # 目标存储路径
         self.target = None
 
-    def download(self, session: requests.Session, folder: str) -> None:
+    async def download(self, session: requests.Session, folder: str) -> None:
         """下载音视频资源到存储路径
 
         @param session: 用以访问互联网的会话管理器
@@ -39,11 +40,22 @@ class Media(object):
         print(f'正在将 {self.name} 下载到 {self.target} ...')
 
         # 启动下载
-        content = session.get(url=self.url, stream=True)
-        with open(self.target, 'wb') as f:
-            for chunk in content.iter_content(self.chunk_size):
-                if chunk:
-                    f.write(chunk)
+        current = 0
+        progress = 0
+        async with session.get(url=self.url) as r:
+            # 文件总大小
+            total_volume = int(r.headers['Content-Length'])
+            async with aiofiles.open(self.target, 'wb') as f:
+                async for chunk in r.content.iter_chunked(self.chunk_size):
+                    if chunk:
+                        current += self.chunk_size
+                        progress = int(current/total_volume*100)
+                        await f.write(chunk)
+
+                    # 显示一个简单的进度条
+                    print('\r', self.name, ': ', int(current/1024/1024), '/',
+                          int(total_volume/1024/1024), f'MB({progress})%|',
+                          'x'*progress, '.'*(100-progress), sep='', end='')
 
 
 class MediaCollection(list):
@@ -51,14 +63,15 @@ class MediaCollection(list):
     def __init__(self, members: list = []):
         super().__init__(members)
 
-    def download(self, session: requests.Session, folder: str):
+    async def download(self, session: requests.Session, folder: str):
         """下载资源列表当中的所有资源"""
         self.folder = folder
-        with ThreadPoolExecutor() as pool:
-            futures = [
-                pool.submit(item.download, session, folder) for item in self
-            ]
-            list(as_completed(futures))
+        tasks = [
+            asyncio.create_task(item.download(session, folder))
+            for item in self
+        ]
+        await asyncio.wait(tasks)
+        print('\n当前资源列表内所有数据均已下载完毕！')
 
     def __str__(self):
         """用更加漂亮的方式打印资源列表"""
@@ -80,7 +93,8 @@ class MediaCollection(list):
         for item in self:
             cmd += ['-i', item.target]
         cmd += ['-codec', 'copy', target, '-y']
-        subprocess.run(cmd)
+        subprocess.run(cmd,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
         for item in self:
             os.remove(item.target)

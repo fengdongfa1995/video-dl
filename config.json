@@ -4,5 +4,6 @@
         "youtube":  ""
     },
     "download_folder": "/mnt/d/Download",
+    "max_conn": 10,
     "chunk_size": 1024
 }
