@@ -3,7 +3,7 @@ download video from online video sites
 
 # Usage
 ```bash
-python3 bilibili.com https://www.bilibili.com/video/BV1qP4y1x7v3
+python3 bilibili.py https://www.bilibili.com/video/BV1qP4y1x7v3
 ```
 
 # Supported websites
