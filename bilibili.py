@@ -1,80 +1,126 @@
-import requests
-import re
 import json
-from pprint import pprint
-import subprocess
+import os
+import re
 
-target_url = 'https://www.bilibili.com/video/BV1qb4y1z7ve'
-headers = {
-    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36 Edg/92.0.902.67',
-    'cookie': r"cookie: rpdid=|(YYlkJJ)lk0J'ulmu~)kulJ; blackside_state=1; CURRENT_FNVAL=80; buvid3=8B22432C-3E2E-457A-8472-08039CFA0E5A185014infoc; buvid_fp=8B22432C-3E2E-457A-8472-08039CFA0E5A185014infoc; _uuid=40432882-7878-B51B-AC3F-4ED62C2B2AFF43667infoc; CURRENT_QUALITY=80; CURRENT_BLACKGAP=1; bp_t_offset_40240481=499027250781108389; fingerprint=294a22df52049250f728f7c2797ea1ff; SESSDATA=6a472e2e%2C1644209871%2Cbe8c9%2A81; bili_jct=e233d20b74aff02c748d061ea1d30abc; DedeUserID=40240481; DedeUserID__ckMd5=e9f44d11c9044f2a; sid=6y2ep749; LIVE_BUVID=AUTO5216286779969031; fingerprint3=4dc3cea7f16efd474480e5b7ce9ca1a2; fingerprint_s=87da5cdc522dfc0b5cfc41ba6a2fc4ef; buvid_fp_plain=8B22432C-3E2E-457A-8472-08039CFA0E5A185014infoc; bp_video_offset_40240481=499027250781108389; PVID=1",
-    'referer': target_url,
-}
+import requests
 
-resp = requests.get(url=target_url, headers=headers).text
-state = re.search(r'window.__INITIAL_STATE__=(.*?);', resp).group(1)
-state = json.loads(state)
-title = state['videoData']['title']
+from media import Media, MediaCollection
+from toolbox import USERAGENT, CONFIG
 
-playinfo = re.search(r'window.__playinfo__=(.*?)</script>', resp).group(1)
-playinfo = json.loads(playinfo)
 
-audios = playinfo['data']['dash']['audio']
-audio_list = []
-for index, audio in enumerate(audios, 1):
-    audio_list.append({
-        'index': index,
-        'url': audio['base_url'],
-        'size': audio['bandwidth'],
-    })
+class Bilibili(object):
+    """B站视频下载器"""
+    site = 'bilibili'
+    home_url = 'https://www.bilibili.com'
 
-desc = playinfo['data']['accept_description']
-quality = playinfo['data']['accept_quality']
-id2desc = {
-    str(key): value
-    for key, value in zip(quality, desc)
-}
+    # 视频存储路径
+    download_folder = CONFIG.download_folder
 
-videos = playinfo['data']['dash']['video']
-video_list = []
-for index, video in enumerate(videos, 1):
-    video_list.append({
-        'index': index,
-        'url': video['base_url'],
-        'size': video['bandwidth'],
-        'codecs': video['codecs'],
-        'resolution': f'{video["width"]}x{video["height"]}',
-        'desc': id2desc[str(video['id'])],
-    })
+    # 抽取关键信息用的正则表达式
+    re_initial_state = re.compile(r'window.__INITIAL_STATE__=(.*?);')
+    re_playinfo = re.compile(r'window.__playinfo__=(.*?)</script>')
 
-print('脚本从B站获取到如下音视频信息...')
-pprint(video_list)
-print()
-pprint(audio_list)
+    def __init__(self):
+        # 新建并配置会话管理器
+        self.session = requests.Session()
+        self.session.headers.update({
+            'user-agent': USERAGENT.random,
+            'cookie': CONFIG.cookie(self.site),
+            'referer': self.home_url,
+        })
 
-answer = input('请输入您要下载的音视频文件序号（视频在前，音频在后，空格隔开）：')
-if not answer.strip():
-    v_index, a_index = 1, 1
-else:
-    v_index, a_index = [int(item) for item in answer.strip().split(' ')]
+        self.video_list = MediaCollection()
+        self.audio_list = MediaCollection()
 
-# 正式下载音视频文件
-print('正在下载视频文件')
-v_url = video_list[v_index - 1]['url']
-content = requests.get(url=v_url, headers=headers, stream=True)
-with open('video.mp4', 'wb') as f:
-    for chunk in content.iter_content(1024):
-        if chunk:
-            f.write(chunk)
+        # 清晰度的id与描述对应字典
+        self.id2desc = None
 
-print('正在下载音频文件')
-a_url = audio_list[a_index - 1]['url']
-content = requests.get(url=a_url, headers=headers, stream=True)
-with open('audio.mp4', 'wb') as f:
-    for chunk in content.iter_content(1024):
-        if chunk:
-            f.write(chunk)
+        # 视频标题
+        self.title = None
+        # 视频存储路径
+        self.file_path = None
 
-# 合并音视频文件
-cmd = 'ffmpeg -i video.mp4 -i audio.mp4 -codec copy'
-subprocess.run(cmd.split(' ') + [f'{title}.mp4', '-y'])
+    def _parse_html(self, target_url: str):
+        """解析网页，抽取关键信息
+
+        @param target_url: 目标网址
+        """
+        # 获取网页源代码
+        resp = self.session.get(url=target_url).text
+
+        # 获取视频标题
+        state = json.loads(self.re_initial_state.search(resp).group(1))
+        self.title = state['videoData']['title']
+        self.file_path = os.path.join(self.download_folder,
+                                      f'{self.title}.mp4')
+
+        # 获取音视频资源相关信息
+        playinfo = json.loads(self.re_playinfo.search(resp).group(1))
+
+        # 获取id与清晰度对应表
+        if self.id2desc is None:
+            desc = playinfo['data']['accept_description']
+            quality = playinfo['data']['accept_quality']
+            self.id2desc = {
+                str(key): value for key, value in zip(quality, desc)
+            }
+
+        # 抽取所有可用音频资源
+        audios = playinfo['data']['dash']['audio']
+        for audio in audios:
+            self.audio_list.append(Media(
+                url=audio['base_url'],
+                name=f'{self.title}_audio.mp4',
+                size=audio['bandwidth']
+            ))
+
+        # 抽取所有可用视频资源
+        videos = playinfo['data']['dash']['video']
+        for video in videos:
+            self.video_list.append(Media(
+                url=video['base_url'],
+                name=f'{self.title}_video.mp4',
+                size=video['bandwidth'],
+                desc=self.id2desc[str(video['id'])] + ' + ' + video['codecs']
+            ))
+
+    def download(self, target_url: str):
+        """提供给用户的API，下载视频
+
+        @param target_url: 目标网址
+        """
+        # 解析网页源代码
+        self._parse_html(target_url)
+
+        print('脚本从B站获取到如下音视频信息...')
+        print('请在这里找准您想要下载的视频信息！')
+        print(self.video_list)
+        print('\n请在这里找准您想要下载的音频信息！')
+        print(self.audio_list)
+
+        answer = input('请输入欲下载文件的序号（默认取第一个）：').strip()
+        if not answer:
+            v_index, a_index = 1, 1
+        else:
+            v_index, a_index = [int(item) for item in answer.split(' ')]
+
+        # 抽取出下载链接
+        target_collection = MediaCollection([self.video_list[v_index - 1],
+                                             self.audio_list[a_index - 1]])
+        print('\n您选中的音视频资源：\n', target_collection)
+
+        target_collection.download(self.session, self.download_folder)
+        target_collection.merge(self.file_path)
+
+
+def main():
+    import sys
+    url = sys.argv[1]
+
+    app = Bilibili()
+    app.download(url)
+    print('job done!')
+
+
+if __name__ == '__main__':
+    main()

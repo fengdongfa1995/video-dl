@@ -1,0 +1,8 @@
+{
+    "cookie": {
+        "bilibili": "",
+        "youtube":  ""
+    },
+    "download_folder": "/mnt/d/Download",
+    "chunk_size": 1024
+}
