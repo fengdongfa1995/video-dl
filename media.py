@@ -13,9 +13,6 @@ class Media(object):
     """音视频资源类"""
     chunk_size = CONFIG.chunk_size
 
-    # 控制并发量
-    sema = asyncio.Semaphore(CONFIG.max_conn)
-
     # 文件大小超过阈值做分段下载
     threshold = CONFIG.big_file_threshold
 
@@ -41,9 +38,8 @@ class Media(object):
     async def _get_file_size(self, session: ClientSession) -> None:
         """通过发送head请求获取目标文件大小"""
         headers = {'range': 'bytes=0-1'}
-        async with self.sema:
-            async with session.get(url=self.url, headers=headers) as r:
-                self.size = int(r.headers['Content-Range'].split('/')[1])
+        async with session.get(url=self.url, headers=headers) as r:
+            self.size = int(r.headers['Content-Range'].split('/')[1])
 
     async def download(self, session: ClientSession, folder: str) -> None:
         """下载音视频资源到存储路径
@@ -100,25 +96,23 @@ class Media(object):
             target = self.target
 
         # 进度条起始信息
-        async with self.sema:
-            async with session.get(url=self.url, headers=headers) as r:
-                async with aiofiles.open(target, 'wb') as f:
-                    async for chunk in r.content.iter_chunked(self.chunk_size):
-                        await f.write(chunk)
+        async with session.get(url=self.url, headers=headers) as r:
+            async with aiofiles.open(target, 'wb') as f:
+                async for chunk in r.content.iter_chunked(self.chunk_size):
+                    await f.write(chunk)
 
-                        # 进度条相关配置
-                        self.current_size += self.chunk_size
-                        progress = int(self.current_size / self.size * 100)
-                        print(
-                            '\r',
-                            f'{self.name[-20:]}: ',
-                            f'{self.current_size / 1024 / 1024:6.2f}',
-                            '/',
-                            f'{self.size / 1024 / 1024:6.2f}MB',
-                            f'({progress:3}%)|',
-                            'x' * progress, '.' * (100 - progress),
-                            sep='', end=''
-                        )
+                    self.current_size += self.chunk_size
+                    progress = int(self.current_size / self.size * 50)
+                    print(
+                        '\r',
+                        f'{self.name[-20:]}: ',
+                        f'{self.current_size / 1024 / 1024:6.2f}',
+                        '/',
+                        f'{self.size / 1024 / 1024:6.2f}MB',
+                        f'({progress * 2:3}%)|',
+                        'x' * progress, '.' * (50 - progress),
+                        sep='', end=''
+                    )
 
 
 class MediaCollection(list):

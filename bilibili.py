@@ -131,7 +131,8 @@ class Bilibili(object):
                                              self.audio_list[a_index - 1]])
         print('\n您选中的音视频资源：\n', target_collection)
 
-        await target_collection.download(self.session, self.download_folder)
+        await target_collection.download(
+            self.session, self.download_folder)
         target_collection.merge(self.file_path)
 
         # 关闭会话管理器
