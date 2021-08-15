@@ -1,8 +1,3 @@
-"""公用函数库
-
-主要功能：
-    - USERAGENT.random提供随机UA
-"""
 import json
 import os
 import random
@@ -37,7 +32,8 @@ class Config(object):
     """配置文件类
 
     主要功能：
-
+        - Config().cookie(site) 返回站点cookie
+        - Config().key 返回配置文件当中key键对应的内容
     """
     def __init__(self, file_path: str = None):
         # 读取配置文件
@@ -51,7 +47,7 @@ class Config(object):
             self.config = json.load(f)
 
     def cookie(self, site: str) -> str:
-        """随机抽取一个ua
+        """返回目标网站的cookie，默认为空字符串
 
         @param site: 目标网站
 
@@ -69,5 +65,6 @@ class Config(object):
         return value
 
 
+# 创建两个模块级别的全局变量，避免反复读取存储在硬盘当中的文本文件
 USERAGENT = UserAgent()
 CONFIG = Config()

@@ -1,8 +1,8 @@
 import asyncio
 import json
 import os
-import re
 import platform
+import re
 
 import aiohttp
 if platform.system() != 'Windows':

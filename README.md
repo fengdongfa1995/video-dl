@@ -1,5 +1,10 @@
 # video_dl
-download video from online video sites
+download video from online video sites.
+
+# Dependence
+```bash
+pip3 install -r requirements
+```
 
 # Usage
 ```bash
