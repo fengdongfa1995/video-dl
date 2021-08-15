@@ -3,7 +3,8 @@
         "bilibili": "",
         "youtube":  ""
     },
-    "download_folder": ".",
+    "download_folder": "/mnt/d/Download",
     "max_conn": 10,
-    "chunk_size": 1024
+    "chunk_size": 1024,
+    "big_file_threshold": 52428800
 }

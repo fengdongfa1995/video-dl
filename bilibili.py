@@ -50,6 +50,9 @@ class Bilibili(object):
                 'user-agent': USERAGENT.random,
                 'cookie': CONFIG.cookie(self.site),
                 'referer': self.home_url,
+                'origin': self.home_url,
+                'accept': '*/*',
+                'accept-encoding': 'identity',
             }
             conn = aiohttp.TCPConnector(
                 limit=self.max_conn, limit_per_host=self.max_conn,
@@ -145,11 +148,13 @@ class Bilibili(object):
 
 def main():
     import sys
+    import time
     url = sys.argv[1]
 
     app = Bilibili()
+    start_time = time.time()
     asyncio.run(app.download(url))
-    print('job done!')
+    print(f'视频下载完毕，总计用时 {time.time()-start_time:.2f} 秒')
 
 
 if __name__ == '__main__':
