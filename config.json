@@ -4,7 +4,7 @@
         "youtube":  ""
     },
     "download_folder": "/mnt/d/Download",
-    "max_conn": 10,
+    "max_conn": 5,
     "chunk_size": 1024,
     "big_file_threshold": 52428800
 }

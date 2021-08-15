@@ -25,10 +25,8 @@ class Bilibili(object):
     re_initial_state = re.compile(r'window.__INITIAL_STATE__=(.*?);')
     re_playinfo = re.compile(r'window.__playinfo__=(.*?)</script>')
 
-    # 限制请求频率
-    max_conn = CONFIG.max_conn
-
     def __init__(self):
+        # 音视频资源列表
         self.video_list = MediaCollection()
         self.audio_list = MediaCollection()
 
@@ -52,14 +50,8 @@ class Bilibili(object):
                 'referer': self.home_url,
                 'origin': self.home_url,
                 'accept': '*/*',
-                'accept-encoding': 'identity',
             }
-            conn = aiohttp.TCPConnector(
-                limit=self.max_conn, limit_per_host=self.max_conn,
-                force_close=True, enable_cleanup_closed=True, ssl=False
-            )
-            self.session = aiohttp.ClientSession(connector=conn,
-                                                 headers=headers)
+            self.session = aiohttp.ClientSession(headers=headers)
 
     async def close_session(self):
         """管理会话管理器"""

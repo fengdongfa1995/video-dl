@@ -153,7 +153,7 @@ class MediaCollection(list):
 
         @param target: 视频存储路径
         """
-        print(f'正在将资源列表当中的内容合并到 {target} ...')
+        print(f'\n正在将资源列表当中的内容合并到 {target} ...')
 
         # 拼接调用ffmpeg的系统命令
         cmd = ['ffmpeg']
