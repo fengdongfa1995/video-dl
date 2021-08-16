@@ -14,8 +14,13 @@ pip3 install -r requirements
 - [ffmpeg](https://ffmpeg.org/)
 
 # Usage
+## Normal Usage
 ```bash
 python3 bilibili.py https://www.bilibili.com/video/BV1qP4y1x7v3
+```
+## Help
+```bash
+python3 bilibili.py -h
 ```
 
 # Supported websites
