@@ -1,10 +1,9 @@
-from aiohttp import ClientSession
+import aiohttp
 import asyncio
 import os
 import subprocess
 
 from prettytable import PrettyTable
-import aiofiles
 
 from toolbox import CONFIG
 
@@ -20,7 +19,7 @@ class Media(object):
         """初始化音视频资源对象
 
         @param url: 在线访问网址
-        @param file_name: 存储时文件名
+        @param name: 存储时文件名
         @param size: 文件大小
         @param description: 描述文本
         """
@@ -35,13 +34,17 @@ class Media(object):
         # 当前已下载大小
         self.current_size = 0
 
-    async def _get_file_size(self, session: ClientSession) -> None:
+    async def _get_file_size(self, session: aiohttp.ClientSession) -> int:
         """通过发送head请求获取目标文件大小"""
         headers = {'range': 'bytes=0-1'}
         async with session.get(url=self.url, headers=headers) as r:
             self.size = int(r.headers['Content-Range'].split('/')[1])
 
-    async def download(self, session: ClientSession, folder: str) -> None:
+        return self.size
+
+    async def download(self,
+                       session: aiohttp.ClientSession,
+                       folder: str) -> None:
         """下载音视频资源到存储路径
 
         @param session: 用以访问互联网的会话管理器
@@ -49,57 +52,60 @@ class Media(object):
         """
         # 确定存储位置
         self.target = os.path.join(folder, self.name)
-        print(f'正在将 {self.name} 下载到 {self.target} ...')
+        print(f'正在将 {self.name[-20:]} 下载到 {folder} ...')
 
         # 获取文件大小
-        await self._get_file_size(session)
+        size = await self._get_file_size(session)
 
-        if self.size <= self.threshold:
-            await self._download_clip(session, folder)
+        if size <= self.threshold:
+            await self._download_clip(session)
         else:
-            clip_point = range(0, self.size, self.threshold)
+            clip_point = range(0, size, self.threshold)
             tasks = []
             targets = []
             for index, value in enumerate(clip_point, 1):
-                end_point = min(value + self.threshold - 1, self.size - 1)
+                # 设置视频碎片的存储路径
                 d, n = os.path.splitext(self.target)
                 target = f'{d}_part_{index}{n}'
+                targets.append(target)
+
+                # 新建下载任务
+                end_point = min(value + self.threshold - 1, size - 1)
                 tasks.append(asyncio.create_task(
                     self._download_clip(
-                        session, folder,
+                        session,
                         {'range': f'bytes={value}-{end_point}'},
                         target
                     )))
-                targets.append(target)
             await asyncio.wait(tasks)
 
             # 合并音视频文件碎片
-            async with aiofiles.open(self.target, 'wb') as f:
+            with open(self.target, 'wb') as f:
                 for t in targets:
-                    async with aiofiles.open(t, 'rb') as clip:
-                        await f.write(await clip.read())
+                    with open(t, 'rb') as clip:
+                        f.write(clip.read())
+
+                    # 清理临时文件
                     os.remove(t)
 
     async def _download_clip(self,
-                             session: ClientSession,
-                             folder: str,
+                             session: aiohttp.ClientSession,
                              headers: dict = {},
                              target: str = None) -> None:
         """下载视频片段
 
         @param session: 访问网络的会话管理器
-        @param folder: 存储路径
         @param headers: 请求头，要求服务器返回切片数据
-        @param suffix: 切片存储路径
+        @param target: 音视频碎片存储路径
         """
         if target is None:
             target = self.target
 
         # 进度条起始信息
-        async with session.get(url=self.url, headers=headers) as r:
-            async with aiofiles.open(target, 'wb') as f:
+        with open(target, 'wb') as f:
+            async with session.get(url=self.url, headers=headers) as r:
                 async for chunk in r.content.iter_chunked(self.chunk_size):
-                    await f.write(chunk)
+                    f.write(chunk)
 
                     self.current_size += self.chunk_size
                     progress = int(self.current_size / self.size * 50)
@@ -120,7 +126,9 @@ class MediaCollection(list):
     def __init__(self, members: list = []):
         super().__init__(members)
 
-    async def download(self, session: ClientSession, folder: str) -> None:
+    async def download(self,
+                       session: aiohttp.ClientSession,
+                       folder: str) -> None:
         """下载资源列表当中的所有资源
 
         @param session: 用于访问互联网的会话管理器
@@ -137,7 +145,9 @@ class MediaCollection(list):
         tb = PrettyTable()
         tb.field_names = ['index', 'name', 'desc', 'size', 'url']
         for index, media in enumerate(self, 1):
-            info = [index, media.name, media.desc, media.size, media.url[:40]]
+            info = [
+                index, media.name[-20:], media.desc, media.size, media.url[:40]
+            ]
             tb.add_row(info)
 
         return tb.get_string()
