@@ -1,8 +1,9 @@
 import aiohttp
 import asyncio
+import contextvars
+import math
 import os
 import subprocess
-import contextvars
 
 from prettytable import PrettyTable
 
@@ -103,20 +104,21 @@ class Media(object):
         if size <= self.threshold:
             await self._download_slice()
         else:
-            clip_point = range(0, size, self.threshold)
-            targets = []
-            tasks = []
-            for index, _ in enumerate(clip_point, 1):
-                targets.append(self._get_target(index))
-                tasks.append(asyncio.create_task(self._download_slice(index)))
+            # 切片数目
+            slice_count = math.ceil(size / self.threshold)
+            tasks = [
+                asyncio.create_task(self._download_slice(index))
+                for index in range(1, slice_count + 1)
+            ]
             await asyncio.wait(tasks)
 
             # 合并音视频文件碎片
             with open(self.target, 'wb') as f:
-                for t in targets:
-                    with open(t, 'rb') as clip:
-                        f.write(clip.read())
-                    os.remove(t)
+                for index in range(1, slice_count):
+                    target = self._get_target(index)
+                    with open(target, 'rb') as media_slice:
+                        f.write(media_slice.read())
+                    os.remove(target)
 
     async def _download_slice(self, index: int = None) -> None:
         """下载资源片段
