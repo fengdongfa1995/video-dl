@@ -10,6 +10,7 @@ from toolbox import CONFIG
 
 
 client_session = contextvars.ContextVar('Aiohttp.ClientSession')
+semaphore = contextvars.ContextVar('asyncio.Semaphore')
 
 
 class Media(object):
@@ -132,23 +133,24 @@ class Media(object):
         headers = self._get_headers(self.size, self.threshold, index)
 
         # 进度条起始信息
-        with open(target, 'wb') as f:
-            async with session.get(url=self.url, headers=headers) as r:
-                async for chunk in r.content.iter_chunked(self.chunk_size):
-                    f.write(chunk)
+        async with semaphore.get():
+            with open(target, 'wb') as f:
+                async with session.get(url=self.url, headers=headers) as r:
+                    async for chunk in r.content.iter_chunked(self.chunk_size):
+                        f.write(chunk)
 
-                    self.current_size += self.chunk_size
-                    progress = int(self.current_size / self.size * 50)
-                    print(
-                        '\r',
-                        f'{self.target[-20:]}: ',
-                        f'{self.current_size / 1024 / 1024:6.2f}',
-                        '/',
-                        f'{self.size / 1024 / 1024:6.2f}MB',
-                        f'({progress * 2:3}%)|',
-                        'x' * progress, '.' * (50 - progress),
-                        sep='', end=''
-                    )
+                        self.current_size += self.chunk_size
+                        progress = int(self.current_size / self.size * 50)
+                        print(
+                            '\r',
+                            f'{self.target[-20:]}: ',
+                            f'{self.current_size / 1024 / 1024:6.2f}',
+                            '/',
+                            f'{self.size / 1024 / 1024:6.2f}MB',
+                            f'({progress * 2:3}%)|',
+                            'x' * progress, '.' * (50 - progress),
+                            sep='', end=''
+                        )
 
 
 class MediaCollection(list):
@@ -163,6 +165,9 @@ class MediaCollection(list):
         """
         # 将会话管理器传递给上下文管理器
         client_session.set(session)
+
+        # 控制信号量
+        semaphore.set(asyncio.Semaphore(CONFIG.max_conn))
 
         # 下载资源列表当中的所有资源
         tasks = [asyncio.create_task(item.download()) for item in self]
