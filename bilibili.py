@@ -173,7 +173,7 @@ class Bilibili(object):
 
 def main():
     # 命令行参数解析器
-    parser = argparse.ArgumentParser('Oneline Video Downloader')
+    parser = argparse.ArgumentParser('python3 bilibili.py')
     parser.add_argument(
         '-i', '--interactive', action='store_true',
         help='Manually select download resources'
