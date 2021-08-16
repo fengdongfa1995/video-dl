@@ -147,7 +147,7 @@ class Bilibili(object):
         # 不用手工选择下载目标时，默认取第一个
         if not flag:
             return MediaCollection([
-                self.video_list[1], self.audio_list[1]
+                self.video_list[0], self.audio_list[0]
             ])
 
         print('脚本从目标网站处获取到如下视频信息...')
