@@ -134,8 +134,8 @@ class Media(object):
 
         # 进度条起始信息
         async with semaphore.get():
-            with open(target, 'wb') as f:
-                async with session.get(url=self.url, headers=headers) as r:
+            async with session.get(url=self.url, headers=headers) as r:
+                with open(target, 'wb') as f:
                     async for chunk in r.content.iter_chunked(self.chunk_size):
                         f.write(chunk)
 
