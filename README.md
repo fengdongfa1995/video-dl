@@ -4,7 +4,7 @@ download video from online video sites.
 # Dependence
 ## Python Version
 ```
-3.5+
+3.6+
 ```
 ## Third Party Libraries
 ```bash
