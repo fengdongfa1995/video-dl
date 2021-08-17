@@ -29,7 +29,7 @@ import subprocess
 
 from prettytable import PrettyTable
 
-from toolbox import Config
+from toolbox import Config, progress_bar
 
 
 session = contextvars.ContextVar('Aiohttp.ClientSession')
@@ -150,19 +150,8 @@ class Media(object):
                     async for chunk in r.content.iter_chunked(self.chunk_size):
                         f.write(chunk)
 
-                        # a naive progress bar
                         self.current_size += self.chunk_size
-                        progress = int(self.current_size / self.size * 50)
-                        print(
-                            '\r',
-                            f'{self.target[-20:]}: ',
-                            f'{self.current_size / 1024 / 1024:6.2f}',
-                            '/',
-                            f'{self.size / 1024 / 1024:6.2f}MB',
-                            f'({progress * 2:3}%)|',
-                            'x' * progress, '.' * (50 - progress),
-                            sep='', end=''
-                        )
+                        progress_bar(self.target, self.current_size, self.size)
 
 
 class MediaCollection(list):
