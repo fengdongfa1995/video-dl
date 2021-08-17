@@ -15,8 +15,9 @@ pip3 install -r requirements
 
 # Usage
 ## Normal Usage
+> :warning: If there are special symbols in your url, please enclose it with quotation marks. 
 ```bash
-python3 bilibili.py https://www.bilibili.com/video/BV1qP4y1x7v3
+python3 bilibili.py 'https://www.bilibili.com/video/BV15L411p7M8'
 ```
 ## Help
 ```bash

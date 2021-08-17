@@ -1,3 +1,25 @@
+"""Library for handling media.
+
+Some online video website stores their video (picture) and audio (sound)
+separately in differrent place. So, if we want to download a complete video,
+we should download video and audio (I say, media) first, and then merge them to
+one.
+
+when downloading a single media, if its size exceeds a certain threshold,
+program will slice it to many fragment and download with different coroutine.
+
+Available function:
+    - Media().download: download a media from internet.
+    - MediaCollection().download: download medias contained in MediaCollection.
+    - MediaCollection().merge: combined medias contained in collection to one.
+
+Typical usage example:
+    media1 = Media(**{'url': 'url1', 'name': '1', size: '1', folder: '.'})
+    media2 = Media(**{'url': 'url2', 'name': '2', size: '2', folder: '.'})
+    media_collection = MediaCollation([media1, media2])
+    for media in media_collection:
+        media.download()
+"""
 import aiohttp
 import asyncio
 import contextvars
@@ -7,37 +29,32 @@ import subprocess
 
 from prettytable import PrettyTable
 
-from toolbox import CONFIG
+from toolbox import Config
 
 
-client_session = contextvars.ContextVar('Aiohttp.ClientSession')
+session = contextvars.ContextVar('Aiohttp.ClientSession')
 semaphore = contextvars.ContextVar('asyncio.Semaphore')
 
 
 class Media(object):
-    """音视频资源类"""
-    chunk_size = CONFIG.chunk_size
+    """Class used to handle media."""
+    _config = Config()
 
-    # 文件大小超过阈值做分段下载
-    threshold = CONFIG.big_file_threshold
+    chunk_size = _config.chunk_size
+    threshold = _config.big_file_threshold
 
-    def __init__(self, *,
-                 url: str,
-                 name: str,
-                 size: float,
-                 folder: str,
-                 salt: str = '',
-                 suffix: str = 'mp4',
-                 desc: str = 'null'):
-        """初始化音视频资源对象
+    def __init__(self, *, url: str, name: str, size: float, folder: str,
+                 salt: str = '', suffix: str = 'mp4', desc: str = 'null'):
+        """Initialize a media object.
 
-        @param url: 在线访问网址
-        @param name: 不含后缀的文件名
-        @param size: 文件大小
-        @param folder: 存储文件夹
-        @param salt: 自定义的额外标识符
-        @param suffix: 文件名后缀，默认为mp4
-        @param description: 描述文本，默认为null
+        Args:
+            url: target url.
+            name: media's file name without suffix.
+            size: media's file size.
+            folder: folder where media will save to.
+            salt: extra string will be inserted into file name.
+            suffix: suffix, default: mp4.
+            desc: description of media, default: null.
         """
         self.url = url
         self.name = name
@@ -49,70 +66,69 @@ class Media(object):
 
         self.target = self._get_target()
 
-        # 当前已下载大小
-        self.current_size = 0
+        self.current_size = 0  # file size during downloading process
 
     def _get_target(self, index: int = None) -> str:
-        """获取当前资源的目标存储路径
+        """get media slice's target storage path.
 
-        @param index: 资源碎片编号
+        insert a index into file name and return.
+
+        Args:
+            index: index of media slice.
+
+        Returns:
+            media slice's target storage path. e.g.: media_p_2.mp4.
         """
-        # 文件名如果加盐，就添加一个下划线隔开
         salt = f'_{self.salt}' if self.salt else ''
 
         if index is None:
-            # 默认直接返回文件名
             return os.path.join(self.folder,
                                 f'{self.name}{salt}.{self.suffix}')
         else:
-            # 如果提供了序号便返回碎片名
             return os.path.join(self.folder,
                                 f'{self.name}{salt}_p_{index}.{self.suffix}')
 
-    async def _get_file_size(self) -> int:
-        """通过发送head请求获取目标文件大小"""
-        # 从上下文管理器当中取出会话管理器
-        session = client_session.get()
-
+    async def _set_size(self) -> None:
+        """set media file's real size by parsing server's response headers."""
         headers = {'range': 'bytes=0-1'}
-        async with session.get(url=self.url, headers=headers) as r:
+        async with session.get().get(url=self.url, headers=headers) as r:
             self.size = int(r.headers['Content-Range'].split('/')[1])
 
-        return self.size
+    def _get_headers(self, index: int = None) -> dict:
+        """get a header should be sent to server for downloading a media slice.
 
-    def _get_headers(self,
-                     total_size: int,
-                     slice_size: int,
-                     index: int = None) -> dict:
-        """返回下载视频切片时应带上的请求头"""
+        Args:
+            index: index of media slice. begin with 1.
+
+        Returns:
+            a request header with slice range. defalut: {}.
+        """
         if index is None:
             return {}
 
-        for i, v in enumerate(range(0, total_size, slice_size), 1):
-            end_point = min(v + slice_size - 1, total_size - 1)
-            if i == index:
-                return {'range': f'bytes={v}-{end_point}'}
+        slice_point = range(0, self.size, self.threshold)
+        start_point = slice_point[index - 1]
+        end_point = min(start_point + self.threshold - 1, self.size - 1)
+        return {'range': f'bytes={start_point}-{end_point}'}
 
     async def download(self) -> None:
-        """下载音视频资源到存储路径"""
-        salt = f'_{self.salt}' if self.salt else ''
-        print(f'正在将 {self.name[-20:]}{salt} 下载到 {self.folder} ...')
+        """download media to target folder."""
+        print(f'正在将 {self.target[-20:]} 下载到 {self.folder} ...')
 
-        # 获取文件大小
-        size = await self._get_file_size()
-
-        if size <= self.threshold:
+        await self._set_size()
+        if self.size <= self.threshold:  # don't need silce
             await self._download_slice()
         else:
-            # 切片数目
-            slice_count = math.ceil(size / self.threshold)
-            tasks = [
+            slice_count = math.ceil(self.size / self.threshold)
+
+            # create task and run
+            await asyncio.wait([
                 asyncio.create_task(self._download_slice(index))
                 for index in range(1, slice_count + 1)
-            ]
-            await asyncio.wait(tasks)
+            ])
 
-            # 合并音视频文件碎片
+            # merge media slices to a complete one
+            # and remove these media slices
             with open(self.target, 'wb') as f:
                 for index in range(1, slice_count):
                     target = self._get_target(index)
@@ -121,26 +137,20 @@ class Media(object):
                     os.remove(target)
 
     async def _download_slice(self, index: int = None) -> None:
-        """下载资源片段
+        """download media slice from internet
 
-        @param index: 当前欲下载资源切片的编号
+        @param index: index of media slice which we want to download.
         """
-        # 从上下文管理器当中取出会话管理器
-        session = client_session.get()
+        target = self._get_target(index)  # get target location to save media
+        headers = self._get_headers(index)  # get headers to send to server
 
-        # 当前欲下载资源切片的存储路径
-        target = self._get_target(index)
-
-        # 发送请求时应带上的请求头
-        headers = self._get_headers(self.size, self.threshold, index)
-
-        # 进度条起始信息
         async with semaphore.get():
-            async with session.get(url=self.url, headers=headers) as r:
+            async with session.get().get(url=self.url, headers=headers) as r:
                 with open(target, 'wb') as f:
                     async for chunk in r.content.iter_chunked(self.chunk_size):
                         f.write(chunk)
 
+                        # a naive progress bar
                         self.current_size += self.chunk_size
                         progress = int(self.current_size / self.size * 50)
                         print(
@@ -156,58 +166,61 @@ class Media(object):
 
 
 class MediaCollection(list):
-    """音视频资源列表类"""
-    def __init__(self, members: list = []):
+    """class for handle list of medias."""
+    _config = Config()
+
+    def __init__(self, members: list = None):
+        if members is None:
+            members = []
         super().__init__(members)
 
-    async def download(self, session: aiohttp.ClientSession) -> None:
-        """下载资源列表当中的所有资源
+    async def download(self, client_session: aiohttp.ClientSession) -> None:
+        """download all medias contained in this collection.
 
-        @param session: 用于访问互联网的会话管理器
+        Args:
+            client_session: a session used to connect internet.
         """
-        # 将会话管理器传递给上下文管理器
-        client_session.set(session)
+        session.set(client_session)
+        semaphore.set(asyncio.Semaphore(self._config.max_conn))
 
-        # 控制信号量
-        semaphore.set(asyncio.Semaphore(CONFIG.max_conn))
-
-        # 下载资源列表当中的所有资源
-        tasks = [asyncio.create_task(item.download()) for item in self]
-        await asyncio.wait(tasks)
+        # download all media
+        await asyncio.wait([
+            asyncio.create_task(item.download()) for item in self
+        ])
 
     def __str__(self):
-        """用更加漂亮的方式打印资源列表"""
+        """print this media collection with pretty format."""
         tb = PrettyTable()
-        tb.field_names = ['index', 'name', 'desc', 'size', 'url']
+        tb.field_names = ['index', 'name', 'desc', 'url']
         for index, media in enumerate(self, 1):
-            tb.add_row([
-                index, media.name[-20:], media.desc, media.size, media.url[:40]
-            ])
-
+            tb.add_row([index, media.name[-20:], media.desc, media.url[:40]])
         return tb.get_string()
 
     def merge(self, target: str) -> None:
-        """将资源列表当中所有资源合并成一个视频
+        """merge all medias into a complete one.
 
-        @param target: 视频存储路径
+        only workable after all medias are ready.
+
+        Args:
+            target: target location to save video.
         """
         print(f'\n正在将资源列表当中的内容合并到 {target} ...')
 
-        # 拼接调用ffmpeg的系统命令
+        # command line command
         cmd = ['ffmpeg']
         for item in self:
             cmd += ['-i', item.target]
         cmd += ['-codec', 'copy', target, '-y']
 
-        # 调用系统ffmpeg完成视频拼接
-        subprocess.run(
-            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-        )
+        # call command provided by opration system
+        subprocess.run(cmd, stdout=subprocess.DEVNULL,
+                       stderr=subprocess.STDOUT, check=True)
 
-        # 删除临时文件
+        # remove temporary files
         for item in self:
             os.remove(item.target)
 
-    # TODO: 对音视频资源列表排序，因为脚本默认下载第一个资源
+    # TODO: sort items in MediaCollection,
+    # because we download the first item in list by default.
     def todo_sorted(self):
         pass
