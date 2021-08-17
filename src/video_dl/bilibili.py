@@ -1,7 +1,4 @@
 """Library for Control flow."""
-from media import Media, MediaCollection
-from toolbox import UserAgent, Config
-
 import argparse
 import asyncio
 import json
@@ -11,6 +8,10 @@ import re
 import time
 
 import aiohttp
+
+from media import Media, MediaCollection
+from toolbox import UserAgent, Config
+
 if platform.system() != 'Windows':
     import uvloop
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -151,7 +152,9 @@ class Bilibili(object):
 
 
 def main():
-    parser = argparse.ArgumentParser('python3 bilibili.py')
+    parser = argparse.ArgumentParser(
+        'video_dl',
+        description='A naive online video downloader based on aiohttp')
     parser.add_argument(
         '-i', '--interactive', action='store_true',
         help='Manually select download resources.'
