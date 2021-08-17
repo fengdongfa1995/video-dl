@@ -9,8 +9,8 @@ import time
 
 import aiohttp
 
-from media import Media, MediaCollection
-from toolbox import UserAgent, Config
+from video_dl.media import Media, MediaCollection
+from video_dl.toolbox import UserAgent, Config
 
 if platform.system() != 'Windows':
     import uvloop

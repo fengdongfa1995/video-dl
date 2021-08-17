@@ -29,7 +29,7 @@ import subprocess
 
 from prettytable import PrettyTable
 
-from toolbox import Config, progress_bar
+from video_dl.toolbox import Config, progress_bar
 
 
 session = contextvars.ContextVar('Aiohttp.ClientSession')
