@@ -1,31 +1,41 @@
 # video_dl
-download video from online video sites.
 
-# Dependence
-## Python Version
-```
-3.6+
-```
-## Third Party Libraries
+video_dl is a naive online video downloader based on [aiohttp](https://docs.aiohttp.org/en/stable/).
+
+## Prerequisites
+- [ffmpeg](https://ffmpeg.org/).
+- [python](https://www.python.org) 3.7 or above (required by [aiohttp](https://docs.aiohttp.org/en/stable/)).
+
+## Installation
 ```bash
-pip3 install -r requirements
+pip3 install video_dl
 ```
-## System Dependence
-- [ffmpeg](https://ffmpeg.org/)
 
-# Usage
-## Normal Usage
+## Upgrading
+```bash
+pip3 install --upgrade video_dl
+```
+
+## Usage
+### download the highest-definition video
 > :warning: If there are special symbols in your url, please enclose it with quotation marks. 
 ```bash
-python3 bilibili.py 'https://www.bilibili.com/video/BV15L411p7M8'
+video_dl 'https://www.bilibili.com/video/BV15L411p7M8'
 ```
-## Help
+> :warning: the `highest` depends my own view, maybe not the one you want.
+
+### download video which resoultion will be selected manually
 ```bash
-python3 bilibili.py -h
+video_dl -i 'https://www.bilibili.com/video/BV15L411p7M8'
+```
+
+## Help document
+```bash
+video_dl -h
 ```
 
 # Supported websites
 - [哔哩哔哩 (゜-゜)つロ 干杯~](https://www.bilibili.com/)
 
-# More Details
+# How this shit is created?
 - [在B站学习用Python做一个B站爬虫](https://www.bilibili.com/video/BV1nv411T798/)
