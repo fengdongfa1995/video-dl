@@ -1,4 +1,4 @@
-from video_dl.bilibili import main
+from video_dl.entry import main
 
 if __name__ == '__main__':
     main()

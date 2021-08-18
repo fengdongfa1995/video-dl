@@ -30,7 +30,8 @@ import subprocess
 
 from prettytable import PrettyTable
 
-from video_dl.toolbox import Config, info, ConsoleColor
+from video_dl.toolbox import info, ConsoleColor
+from video_dl.args import Arguments
 
 
 session = contextvars.ContextVar('Aiohttp.ClientSession')
@@ -39,7 +40,7 @@ semaphore = contextvars.ContextVar('asyncio.Semaphore')
 
 class Media(object):
     """Class used to handle media."""
-    _config = Config()
+    _config = Arguments()
 
     _chunk_size = _config.chunk_size
     _threshold = _config.big_file_threshold
@@ -158,7 +159,7 @@ class Media(object):
 
 class MediaCollection(list):
     """class for handle list of medias."""
-    _config = Config()
+    _config = Arguments()
 
     def __init__(self, members: List[Media] = None, salt: Optional[str] = ''):
         """Initialization
@@ -231,7 +232,7 @@ class MediaCollection(list):
 class Video(object):
     """presents a video."""
     # TODO: combine config file and user's input
-    _config = Config()
+    _config = Arguments()
 
     def __init__(self, suffix: Optional[str] = 'mp4'):
         """Initialize a video object.
@@ -242,7 +243,7 @@ class Video(object):
         self.suffix = suffix
 
         # attributes read from config file or user's input
-        self.root_folder = self._config.download_folder
+        self.root_folder = self._config.directory
         self.use_parent_folder = None
 
         # attributes should be set by spider

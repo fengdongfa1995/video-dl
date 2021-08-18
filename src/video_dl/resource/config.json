@@ -1,9 +1,5 @@
 {
-    "cookie": {
-        "bilibili": "",
-        "youtube":  ""
-    },
-    "download_folder": ".",
+    "directory": ".",
     "max_conn": 10,
     "chunk_size": 1024,
     "big_file_threshold": 104857600
