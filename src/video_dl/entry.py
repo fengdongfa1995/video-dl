@@ -13,8 +13,7 @@ if platform.system() != 'Windows':
 
 
 def main():
-    url = Arguments().url
-    spider = choose_spider(url)
+    spider = choose_spider(Arguments().url)
     start_time = time.time()
     asyncio.run(spider.run())
     print(f'job done! just wasted your time: {time.time() - start_time:.2f}s!')

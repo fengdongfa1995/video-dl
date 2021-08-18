@@ -30,8 +30,8 @@ import subprocess
 
 from prettytable import PrettyTable
 
-from video_dl.toolbox import info, ConsoleColor
 from video_dl.args import Arguments
+from video_dl.toolbox import ConsoleColor, info
 
 
 session = contextvars.ContextVar('Aiohttp.ClientSession')
@@ -40,12 +40,13 @@ semaphore = contextvars.ContextVar('asyncio.Semaphore')
 
 class Media(object):
     """Class used to handle media."""
-    _config = Arguments()
+    arg = Arguments()
 
-    _chunk_size = _config.chunk_size
-    _threshold = _config.big_file_threshold
+    _chunk_size = arg.chunk_size
+    _threshold = arg.big_file_threshold
 
-    def __init__(self, *, url: str, location: str, size: Optional[int] = 0,
+    def __init__(self, *, url: str,
+                 size: Optional[int] = 0,
                  desc: Optional[str] = 'null'):
         """Initialize a media object.
 
@@ -55,9 +56,10 @@ class Media(object):
             desc: description of media, default: null.
         """
         self.url = url  # download media from this url
-        self.location = location  # download to this location
-        self.size = size  # file size fetched from server
+        self.size = size  # file size fetched from server, will be used to sort
         self.desc = desc  # description for choosing by user
+
+        self.location = None  # download to this location
 
         self._current_size = 0  # file size during downloading process
 
@@ -77,7 +79,7 @@ class Media(object):
         else:
             folder, name = os.path.split(self.location)
             title, suffix = os.path.splitext(name)
-            return os.path.join(folder, f'{title}_p_{index}{suffix}')
+            return os.path.join(folder, f'{title}_p{index}{suffix}')
 
     async def _set_size(self) -> None:
         """set media file's real size by parsing server's response headers."""
@@ -119,7 +121,7 @@ class Media(object):
             ])
 
             print()
-            info('merge', f'merging to {self.location}')
+            info('slices to one', f'merging to {os.path.split(self.location)[1]}')
             with open(self.location, 'wb') as f:
                 for index in range(slice_count):
                     target = self._get_location(index + 1)
@@ -159,7 +161,7 @@ class Media(object):
 
 class MediaCollection(list):
     """class for handle list of medias."""
-    _config = Arguments()
+    arg = Arguments()
 
     def __init__(self, members: List[Media] = None, salt: Optional[str] = ''):
         """Initialization
@@ -184,10 +186,10 @@ class MediaCollection(list):
             title, suffix = os.path.splitext(name)
             return os.path.join(folder, f'{title}_{self.salt}{suffix}')
 
-    def add_media(self, url: str, size: int, desc: str) -> None:
-        super().append(Media(
-            url=url, size=size, desc=desc, location=self.get_location()
-        ))
+    def add_media(self, media: Media) -> None:
+        """add media resource into media collection."""
+        media.location = self.get_location()
+        super().append(media)
 
     async def download(self) -> None:
         """download all medias contained in this collection."""
@@ -231,22 +233,29 @@ class MediaCollection(list):
 
 class Video(object):
     """presents a video."""
-    # TODO: combine config file and user's input
-    _config = Arguments()
+    arg = Arguments()
 
-    def __init__(self, suffix: Optional[str] = 'mp4'):
+    max_conn = arg.max_conn
+    directory = arg.directory
+    interactive = arg.interactive
+
+    def __init__(self, client_session: aiohttp.ClientSession,
+                 suffix: Optional[str] = 'mp4'):
         """Initialize a video object.
 
         Args:
+            client_session: session used to access web.
             suffix: the suffix of video file. default: mp4.
         """
-        self.suffix = suffix
+        session.set(client_session)
+        semaphore.set(asyncio.Semaphore(self.max_conn))
 
         # attributes read from config file or user's input
-        self.root_folder = self._config.directory
+        self.root_folder = self.directory
         self.use_parent_folder = None
 
         # attributes should be set by spider
+        self.suffix = suffix
         self.parent_folder = None
         self.title = None
 
@@ -267,20 +276,18 @@ class Video(object):
         """return video's store location."""
         return os.path.join(self.get_folder(), f'{self.title}.{self.suffix}')
 
-    def add_media(self, url: str, size: int, desc: Optional[str] = 'null',
-                  target: Optional[str] = 'video') -> None:
+    def add_media(self, media: Media, target: Optional[str] = 'video') -> None:
         """add a media to the specific media collection.
 
         Args:
-            meta_data: basic information of a media resource. should be a dict
-                with keys: url, size, desc
+            media: a Media object represents some information about media.
             target: the collection will add a media resource. default value is
                 'video', means the media with picture and sound.
         """
         self.media_collection[target].location = self.get_location()
-        self.media_collection[target].add_media(url, size, desc)
+        self.media_collection[target].add_media(media)
 
-    def choose_collection(self, flag: bool) -> MediaCollection:
+    def choose_collection(self) -> MediaCollection:
         """choose download task from media collection.
 
         Args:
@@ -300,7 +307,7 @@ class Video(object):
             self.media_collection['sound'].sort_media()
 
             # choose from 'picture' and 'sound' media collection
-            if flag is False:
+            if self.interactive is False:
                 info('choose', 'using default value...')
                 self.media_collection['video'] = MediaCollection([
                     self.media_collection['picture'][0],
@@ -327,10 +334,8 @@ class Video(object):
             info('choosed', '↓↓↓↓↓↓↓↓↓↓↓')
             print(self.media_collection['video'])
 
-    async def download(self, client_session: aiohttp.ClientSession) -> None:
+    async def download(self) -> None:
         """download medias contained in video media collection."""
-        session.set(client_session)
-        semaphore.set(asyncio.Semaphore(self._config.max_conn))
         await self.media_collection['video'].download()
 
     def merge(self) -> None:

@@ -13,8 +13,7 @@ site2spider_dict = {spider.site: spider for spider in avaliable_spiders}
 
 def choose_spider(url: str) -> Spider:
     """choose a spider for specific url."""
-    parse_result = urlparse(url)
-    netloc = parse_result.netloc
+    netloc = urlparse(url).netloc
 
     for site, spider in site2spider_dict.items():
         if site in netloc:
