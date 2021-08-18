@@ -224,10 +224,8 @@ class MediaCollection(list):
         for item in self:
             os.remove(item.location)
 
-    # TODO: sort items in MediaCollection,
-    # because we download the first item in list by default.
-    def todo_sorted(self):
-        pass
+    def sort_media(self):
+        super().sort(key=lambda item: item.size, reverse=True)
 
 
 class Video(object):
@@ -291,9 +289,15 @@ class Video(object):
             download task
         """
         if len(self.media_collection['video']) != 0:
+            self.media_collection['video'].sort_media()
+
             # choose from 'video' media collection
             raise NotImplementedError('just wait!')
         else:
+            # sort item in media collection
+            self.media_collection['picture'].sort_media()
+            self.media_collection['sound'].sort_media()
+
             # choose from 'picture' and 'sound' media collection
             if flag is False:
                 info('choose', 'using default value...')

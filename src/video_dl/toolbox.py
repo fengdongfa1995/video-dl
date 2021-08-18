@@ -64,7 +64,7 @@ class Config(object):
         if file_path is None:
             file_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                'config.json'
+                'resource', 'config.json'
             )
 
         with open(file_path, 'r', encoding='utf-8') as f:
