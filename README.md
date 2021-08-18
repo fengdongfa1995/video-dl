@@ -1,6 +1,6 @@
 # video_dl
 
-video_dl is a naive online video downloader based on [aiohttp](https://docs.aiohttp.org/en/stable/).
+`video_dl` is a naive online video downloader based on [aiohttp](https://docs.aiohttp.org/en/stable/).
 
 ## Prerequisites
 - [ffmpeg](https://ffmpeg.org/).
@@ -24,10 +24,12 @@ video_dl 'https://www.bilibili.com/video/BV15L411p7M8'
 ```
 > :warning: the `highest` depends my own view, maybe not the one you want.
 
-### download video which resoultion will be selected manually
+![Normal Usage](screenshots/normal_usage.gif)
+### download video which definition will be selected manually
 ```bash
 video_dl -i 'https://www.bilibili.com/video/BV15L411p7M8'
 ```
+![Normal Usage](screenshots/interactive.gif)
 
 ## Help document
 ```bash
