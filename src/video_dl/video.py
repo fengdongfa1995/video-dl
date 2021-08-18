@@ -34,8 +34,8 @@ from video_dl.args import Arguments
 from video_dl.toolbox import ConsoleColor, info
 
 
-session = contextvars.ContextVar('Aiohttp.ClientSession')
-semaphore = contextvars.ContextVar('asyncio.Semaphore')
+session = contextvars.ContextVar('Aiohttp.ClientSession', default=None)
+semaphore = contextvars.ContextVar('asyncio.Semaphore', default=None)
 
 
 class Media(object):
@@ -121,7 +121,7 @@ class Media(object):
             ])
 
             print()
-            info('slices to one', f'merging to {os.path.split(self.location)[1]}')
+            info('slices2one', f'merging to {os.path.split(self.location)[1]}')
             with open(self.location, 'wb') as f:
                 for index in range(slice_count):
                     target = self._get_location(index + 1)
@@ -247,8 +247,11 @@ class Video(object):
             client_session: session used to access web.
             suffix: the suffix of video file. default: mp4.
         """
-        session.set(client_session)
-        semaphore.set(asyncio.Semaphore(self.max_conn))
+        if session.get() is None:
+            session.set(client_session)
+
+        if semaphore.get() is None:
+            semaphore.set(asyncio.Semaphore(self.max_conn))
 
         # attributes read from config file or user's input
         self.root_folder = self.directory

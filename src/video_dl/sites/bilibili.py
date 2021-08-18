@@ -23,11 +23,9 @@ class BilibiliSpider(Spider):
         self.id2desc = None
 
     async def before_download(self) -> None:
-        self.video = Video(self.session)
         await self.parse_html(self.url)
-        self.video.choose_collection()
-
-        self.video_list.append(self.video)
+        for video in self.video_list:
+            video.choose_collection()
 
     def after_downloaded(self) -> None:
         for video in self.video_list:
@@ -39,12 +37,14 @@ class BilibiliSpider(Spider):
         Args:
             target_url: target url copied from online vide website.
         """
+        video = Video(self.session)
+
         info('url', target_url)
         resp = await self.fetch_html(target_url)
 
         # get video's title and set file path
         state = json.loads(self.re_initial_state.search(resp).group(1))
-        self.video.title = state['videoData']['title']
+        video.title = state['videoData']['title']
 
         playinfo = json.loads(self.re_playinfo.search(resp).group(1))
         if self.id2desc is None:
@@ -56,7 +56,7 @@ class BilibiliSpider(Spider):
 
         videos = playinfo['data']['dash']['video']
         for video in videos:
-            self.video.add_media(Media(
+            video.add_media(Media(
                 url=video['base_url'],
                 size=video['bandwidth'],
                 desc=self.id2desc[str(video['id'])] + ' + ' + video['codecs'],
@@ -64,6 +64,8 @@ class BilibiliSpider(Spider):
 
         audios = playinfo['data']['dash']['audio']
         for audio in audios:
-            self.video.add_media(Media(
+            video.add_media(Media(
                 url=audio['base_url'],
                 size=audio['bandwidth']), target='sound')
+
+        self.video_list.append(video)
