@@ -95,18 +95,24 @@ class Config(object):
         return value
 
 
-def progress_bar(label: str, current: int, total: int,
-                 length: int = 50) -> None:
-    """print a naive progress bar.
+class ConsoleColor(object):
+    """ANSI control code for color."""
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
-    Args:
-        label: print left as progress bar's label.
-        current: current bytes fetched from web server.
-        total: total bytes.
-        length: length of progress bar.
-    """
-    progress = int(current / total * length)
-    print('\r', f'{label[-20:]}: ', f'{current / 1024 / 1024:6.2f}/',
-          f'{total / 1024 / 1024:6.2f}MB', f'({progress * 2:3}%)|',
-          'x' * progress, '.' * (length - progress),
-          sep='', end='')
+
+def info(label: str, *args, **kwargs) -> None:
+    """print information to console with colors."""
+    print(f'{ConsoleColor.WARNING}[{label}]{ConsoleColor.OKGREEN}',
+          *args, ConsoleColor.ENDC, **kwargs)
+
+
+if __name__ == '__main__':
+    info('download', 'chifanba', 'lajiche ')

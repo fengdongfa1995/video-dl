@@ -2,15 +2,14 @@
 import argparse
 import asyncio
 import json
-import os
 import platform
 import re
 import time
 
 import aiohttp
 
-from video_dl.media import Media, MediaCollection
-from video_dl.toolbox import UserAgent, Config
+from video_dl.media import Video
+from video_dl.toolbox import UserAgent, Config, info
 
 if platform.system() != 'Windows':
     import uvloop
@@ -30,15 +29,13 @@ class Bilibili(object):
     re_playinfo = re.compile(r'window.__playinfo__=(.*?)</script>')
 
     def __init__(self):
-        self.title = None
-        self.file_path = None
-
         self.session = None
-        self.video_list = MediaCollection()
-        self.audio_list = MediaCollection()
+        self.video = Video()
 
         # from resolution id to description dictionary
         self.id2desc = None
+
+        info('site', self.site)
 
     async def _create_session(self) -> None:
         if self.session is None:
@@ -61,18 +58,15 @@ class Bilibili(object):
         Args:
             target_url: target url copied from online vide website.
         """
+        info('url', target_url)
         async with self.session.get(url=target_url) as r:
             resp = await r.text()
 
         # get video's title and set file path
         state = json.loads(self.re_initial_state.search(resp).group(1))
-        self.title = state['videoData']['title']
-        self.file_path = os.path.join(
-            self.download_folder, f'{self.title}.mp4'
-        )
+        self.video.title = state['videoData']['title']
 
         playinfo = json.loads(self.re_playinfo.search(resp).group(1))
-
         if self.id2desc is None:
             desc = playinfo['data']['accept_description']
             quality = playinfo['data']['accept_quality']
@@ -82,26 +76,20 @@ class Bilibili(object):
 
         videos = playinfo['data']['dash']['video']
         for video in videos:
-            self.video_list.append(Media(**{
-                'url': video['base_url'],
-                'name': self.title,
-                'size': video['bandwidth'],
-                'folder': self.download_folder,
-                'salt': 'video',
-                'desc': (
-                    self.id2desc[str(video['id'])] + ' + ' + video['codecs']
-                ),
-            }))
+            self.video.add_media(
+                url=video['base_url'],
+                size=video['bandwidth'],
+                desc=self.id2desc[str(video['id'])] + ' + ' + video['codecs'],
+                target='picture',
+            )
 
         audios = playinfo['data']['dash']['audio']
         for audio in audios:
-            self.audio_list.append(Media(**{
-                'url': audio['base_url'],
-                'name': self.title,
-                'size': audio['bandwidth'],
-                'folder': self.download_folder,
-                'salt': 'audio',
-            }))
+            self.video.add_media(
+                url=audio['base_url'],
+                size=audio['bandwidth'],
+                target='sound',
+            )
 
     async def run(self, args) -> None:
         """run!run!run!run!run!run!run!run!run!
@@ -113,42 +101,11 @@ class Bilibili(object):
         await self._parse_html(args.url)
 
         # determine download task and download
-        target_collection = self._choose_collection(args.interactive)
-        await target_collection.download(self.session)
-
-        target_collection.merge(self.file_path)
+        self.video.choose_collection(args.interactive)
+        await self.video.download(self.session)
+        self.video.merge()
 
         await self._close_session()
-
-    def _choose_collection(self, flag: bool) -> MediaCollection:
-        """choose download task from media collection.
-
-        Args:
-            flag: Do you want to choose media by yourself?
-
-        Returns:
-            download task
-        """
-        # choose first media by default
-        if not flag:
-            return MediaCollection([
-                self.video_list[0], self.audio_list[0]
-            ])
-
-        print('脚本从目标网站处获取到如下视频信息...')
-        print(self.video_list)
-        print('\n', '脚本从目标网站处获取到如下音频信息...')
-        print(self.audio_list)
-
-        answer = input('请输入欲下载文件序号(默认为：1 1):').strip()
-        if not answer:
-            v, a = 1, 1
-        else:
-            v, a = [int(item) for item in answer.split(' ')]
-
-        return MediaCollection([
-            self.video_list[v - 1], self.audio_list[a - 1]
-        ])
 
 
 def main():
@@ -167,7 +124,7 @@ def main():
     app = Bilibili()
     start_time = time.time()
     asyncio.run(app.run(args))
-    print(f'视频下载完毕，总计用时 {time.time()-start_time:.2f} 秒！')
+    print(f'job done! just wasted your time: {time.time()-start_time:.2f}s!')
 
 
 if __name__ == '__main__':
