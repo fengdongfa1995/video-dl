@@ -31,6 +31,12 @@ video_dl -i 'https://www.bilibili.com/video/BV15L411p7M8'
 ```
 ![Normal Usage](https://github.com/fengdongfa1995/video_dl/raw/main/screenshots/interactive.gif)
 
+### download video to your specific directory
+```bash
+video_dl -d ~/tmp 'https://www.bilibili.com/video/BV15L411p7M8'
+```
+![set download directory](https://github.com/fengdongfa1995/video_dl/raw/main/screenshots/directory.gif)
+
 ## Help document
 ```bash
 video_dl -h
