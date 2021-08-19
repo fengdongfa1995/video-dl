@@ -55,17 +55,17 @@ class BilibiliSpider(Spider):
             }
 
         videos = playinfo['data']['dash']['video']
-        for video in videos:
+        for media in videos:
             video.add_media(Media(
-                url=video['base_url'],
-                size=video['bandwidth'],
-                desc=self.id2desc[str(video['id'])] + ' + ' + video['codecs'],
+                url=media['base_url'],
+                size=media['bandwidth'],
+                desc=self.id2desc[str(media['id'])] + ' + ' + media['codecs'],
             ), target='picture')
 
         audios = playinfo['data']['dash']['audio']
-        for audio in audios:
+        for media in audios:
             video.add_media(Media(
-                url=audio['base_url'],
-                size=audio['bandwidth']), target='sound')
+                url=media['base_url'],
+                size=media['bandwidth']), target='sound')
 
         self.video_list.append(video)

@@ -1,4 +1,4 @@
-"""read config from config file and user's input."""
+"""read config from config file and user's input, then return the result."""
 from typing import Any
 import argparse
 import json
@@ -16,6 +16,7 @@ class Config(object):
         Args:
             file_path: json file path, default: resource/config.json
         """
+        # set config file's absolute path
         if file_path is None:
             file_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -32,24 +33,22 @@ class ArgParse(object):
         parser = argparse.ArgumentParser(
             prog='video_dl',
             description='A naive online video downloader based on aiohttp',
-            epilog=('You could find more important information from '
+            epilog=('You could find more important information in '
                     '[github](https://github.com/fengdongfa1995/video_dl).'),
         )
 
+        # flags
         parser.add_argument(
             '-i', '--interactive', action='store_true',
             help='Manually select download resources.',
         )
 
         parser.add_argument(
-            '-l', '--list', action='store_true',
-            help='try to find a playlist and download.',
+            '-l', '--lists', action='store_true',
+            help='try to find a playlist and download all videos in it.',
         )
 
-        parser.add_argument(
-            'url', help='target url copied from online video website.',
-        )
-
+        # something provided by user
         parser.add_argument(
             '-d', '--directory',
             help='set target diretory to save video file(s).',
@@ -65,6 +64,12 @@ class ArgParse(object):
             help='set proxy. e.g.: http://127.0.0.1:10809',
         )
 
+        # required arguments
+        parser.add_argument(
+            'url', help='target url copied from online video website.',
+        )
+
+        # program's version
         parser.add_argument('-v', '--version',
                             action='version', version=f'%(prog)s {version}')
 
@@ -78,15 +83,19 @@ class Arguments(object):
     args = ArgParse().args  # arguments provided by user
     config = Config().config  # auguments provided by config file
 
-    def __init__(self):
-        pass
-
-    def _if_none_return_empty(self, key: str):
+    def _if_none_return_empty_string(self, key: str) -> str:
+        """if value of the key is None, the return ''."""
+        # just find key in self.args
+        # because config file have no key point to None
         return '' if self.args[key] is None else self.args[key]
 
     @property
-    def cookie(self):
-        return self._if_none_return_empty('cookie')
+    def cookie(self) -> str:
+        """
+        if user doesn't set a cookie, cookie will be None.
+        but our program need a empty string not the None.
+        """
+        return self._if_none_return_empty_string('cookie')
 
     def __getattr__(self, key: str) -> Any:
         if key not in self.args and key not in self.config:
@@ -100,8 +109,6 @@ class Arguments(object):
                 value = self.config[key]
             else:
                 value = self.args[key]
-        else:
-            raise NotImplementedError
 
         setattr(self, key, value)
         return value

@@ -1,4 +1,5 @@
 """Base class for Spiders"""
+from urllib.parse import urlparse
 import aiohttp
 
 from video_dl.args import Arguments
@@ -17,6 +18,15 @@ class Spider(object):
     diretory = arg.directory
     url = arg.url
     interactive = arg.interactive
+
+    @classmethod
+    def create_spider(cls, url: str):
+        """create a specific subclass depends on url."""
+        netloc = urlparse(url).netloc
+        for subclass in cls.__subclasses__():
+            if subclass.site in netloc:
+                return subclass()
+        raise NotImplementedError
 
     def __init__(self):
         self.session = None
@@ -67,3 +77,7 @@ class Spider(object):
         self.after_downloaded()
 
         await self.close_session()
+
+
+# import subclasses of spider
+import video_dl.sites  # pylint: disable=import-error
