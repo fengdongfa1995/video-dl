@@ -1,4 +1,10 @@
-"""Base class for Spiders"""
+"""Base class of all Spiders.
+
+Typical usage:
+    url = 'https://www.bilibili.com/video/BV15L411p7M8'
+    spider = Spider.create_spider(url)  # will return a BilibiliSpider object
+    asycio.run(spider.run())  # try to fetch resource information and download
+"""
 from urllib.parse import urlparse
 import aiohttp
 
@@ -7,17 +13,26 @@ from video_dl.toolbox import UserAgent, info
 
 
 class Spider(object):
-    """crawl data from web and download video."""
-    site = 'f-df.com'
-    home_url = 'https://f-df.com'
+    """crawl data from web and download video.
 
-    # all arguments provied by user and config file
+    subclass of Spider should provide two public attributes:
+        site: this class will use this field to create a specific Spider for
+            target url. for example, BilibiliSpider's site is 'bilibili.com',
+            will auto match to a url like 'https://www.bilibili.com/video/*'.
+        home_url: target website's home page. this field will be inserted into
+            headers of session to avoid some `no referer, no download` policy.
+
+    subclass of Spider should implement some public methods:
+        before_download: do something before download, just like: parse html.
+        after_download: merge picture and sound to a completed video, delete
+            tamporary files, and et al..
+    """
     arg = Arguments()
+
     cookie = arg.cookie
-    proxy = arg.proxy
     diretory = arg.directory
+    proxy = arg.proxy
     url = arg.url
-    interactive = arg.interactive
 
     @classmethod
     def create_spider(cls, url: str):
@@ -31,21 +46,23 @@ class Spider(object):
     def __init__(self):
         self.session = None
         self.headers = {
+            'accept': '*/*',
             'user-agent': UserAgent().random,
             'cookie': self.cookie,
             'referer': self.home_url,
             'origin': self.home_url,
-            'accept': '*/*',
         }
 
-        # list of Videos
+        # list that contains Videos
         self.video_list = []
 
     async def create_session(self) -> None:
+        """create client seesion if not exist."""
         if self.session is None:
             self.session = aiohttp.ClientSession(headers=self.headers)
 
     async def close_session(self) -> None:
+        """close client session if possible."""
         if self.session:
             await self.session.close()
 
@@ -79,5 +96,7 @@ class Spider(object):
         await self.close_session()
 
 
-# import subclasses of spider
+# import subclasses of Spider.
+# You should import XxxSpider in sites/__init__.py
+# then Spider.__subclasses__() could be workable.
 import video_dl.sites  # pylint: disable=import-error

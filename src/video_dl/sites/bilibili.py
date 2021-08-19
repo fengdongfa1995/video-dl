@@ -8,18 +8,18 @@ from video_dl.video import Video, Media
 
 
 class BilibiliSpider(Spider):
-    """spider for bilibili."""
+    """spider for bilibili.com"""
     site = 'bilibili.com'
     home_url = 'https://www.bilibili.com'
 
-    # come re pattern to extract information from html source code
+    # re patterns to extract information from html source code
     re_initial_state = re.compile(r'window.__INITIAL_STATE__=(.*?);')
     re_playinfo = re.compile(r'window.__playinfo__=(.*?)</script>')
 
     def __init__(self):
         super().__init__()
 
-        # from resolution id to description dictionary
+        # video definition's id to definition's description
         self.id2desc = None
 
     async def before_download(self) -> None:
@@ -37,9 +37,10 @@ class BilibiliSpider(Spider):
         Args:
             target_url: target url copied from online vide website.
         """
-        video = Video(self.session)
-
         info('url', target_url)
+
+        video = Video(self.session)  # need a session to access internet
+
         resp = await self.fetch_html(target_url)
 
         # get video's title and set file path

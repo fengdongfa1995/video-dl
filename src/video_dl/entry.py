@@ -5,6 +5,7 @@ import time
 
 from video_dl.args import Arguments
 from video_dl.spider import Spider
+from video_dl.toolbox import info
 
 
 if platform.system() != 'Windows':
@@ -13,11 +14,11 @@ if platform.system() != 'Windows':
 
 
 def main():
+    # get url from command line's augument and create a specifc spider.
     spider = Spider.create_spider(Arguments().url)
+
+    # start spider and download video.
     start_time = time.time()
     asyncio.run(spider.run())
-    print(f'job done! just wasted your time: {time.time() - start_time:.2f}s!')
 
-
-if __name__ == '__main__':
-    main()
+    info('done', f'had wasted your time: {time.time() - start_time:.2f}s!')

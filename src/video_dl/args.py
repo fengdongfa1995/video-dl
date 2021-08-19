@@ -1,4 +1,23 @@
-"""read config from config file and user's input, then return the result."""
+"""read config from config file and user's input, then return the result.
+
+Typical usage:
+    args = Arguments()
+    url = args.url
+    cookie = args.cookie
+    proxy = args.proxy
+    interactive_flag = args.interactive
+
+Available arguments:
+    interactive: choose media resource manually.
+    lists: try to find a playlist and download all video contained in it.
+    directory: set a target directory to save video.
+    cookie: user's own cookie.
+    proxy: internet proxy.
+    url: target url.
+    max_conn: maximum connections simultaneously.
+    chunk_size: chunk size to read from stream.
+    big_file_threshold: file size exceeds this threshold will be sliced.
+"""
 from typing import Any
 import argparse
 import json

@@ -14,11 +14,11 @@ Available function:
     - MediaCollection().merge: combined medias contained in collection to one.
 
 Typical usage example:
-    media1 = Media(**{'url': 'url1', 'name': '1', size: '1', folder: '.'})
-    media2 = Media(**{'url': 'url2', 'name': '2', size: '2', folder: '.'})
+    media1 = Media(**{'url': 'url1', size: '1', desc: '.'})
+    media2 = Media(**{'url': 'url2', size: '2', desc: '.'})
     media_collection = MediaCollation([media1, media2])
-    for media in media_collection:
-        media.download()
+    media_collection.download()
+    media_collection.merge()  # if necessary
 """
 from typing import List, Optional
 import aiohttp
@@ -31,7 +31,7 @@ import subprocess
 from prettytable import PrettyTable
 
 from video_dl.args import Arguments
-from video_dl.toolbox import ConsoleColor, info
+from video_dl.toolbox import ConsoleColor, info, ask_user
 
 
 session = contextvars.ContextVar('Aiohttp.ClientSession', default=None)
@@ -59,20 +59,22 @@ class Media(object):
         self.size = size  # file size fetched from server, will be used to sort
         self.desc = desc  # description for choosing by user
 
-        self.location = None  # download to this location
+        # download to this location, will be changed by MediaCollection outside
+        self.location = None
 
-        self._current_size = 0  # file size during downloading process
+        # file size during downloading, will be used to draw a progress bar.
+        self._current_size = 0
 
     def _get_location(self, index: Optional[int] = 0) -> str:
         """get media slice's target storage path.
 
-        insert a index into file name and return.
+        insert a index into file's name and return.
 
         Args:
             index: index of media slice. defalut value is 0 means no slice.
 
         Returns:
-            media slice's target storage location. e.g.: ./media_p_2.mp4.
+            media slice's target storage location. e.g.: ./media_p2.mp4.
         """
         if index == 0:
             return self.location
@@ -88,10 +90,11 @@ class Media(object):
             self.size = int(r.headers['Content-Range'].split('/')[1])
 
     def _get_headers(self, index: Optional[int] = 0) -> dict:
-        """get a header should be sent to server for downloading a media slice.
+        """get a headers should be sent to server for downloading a media slice
 
         Args:
-            index: index of media slice. default value 0 means no slice.
+            index: index of media slice. begin with 1.
+                default value 0 means no slice.
 
         Returns:
             a request header with slice range. defalut: {}.
@@ -111,7 +114,7 @@ class Media(object):
         await self._set_size()
         if self.size <= self._threshold:  # don't need silce
             await self._download_slice()
-            print()
+            print()  # avoid overwritten
         else:
             # slice media, create task and run
             slice_count = math.ceil(self.size / self._threshold)
@@ -120,7 +123,7 @@ class Media(object):
                 for index in range(slice_count)
             ])
 
-            print()
+            print()  # avoid overwritten
             info('slices2one', f'merging to {os.path.split(self.location)[1]}')
             with open(self.location, 'wb') as f:
                 for index in range(slice_count):
@@ -130,10 +133,10 @@ class Media(object):
                     os.remove(target)
 
     async def _download_slice(self, index: Optional[int] = 0) -> None:
-        """download media slice from internet
+        """download media slice from internet.
 
-        @param index: index of media slice which we want to download. default
-                    value 0 means no slice.
+        @param index: index of media slice which we want to download.
+                    default value 0 means no slice.
         """
         target = self._get_location(index)  # get target location to save media
         headers = self._get_headers(index)  # get headers to send to server
@@ -153,7 +156,7 @@ class Media(object):
         print('\r', ConsoleColor.WARNING, '[downloading] ',
               ConsoleColor.OKGREEN,
               f'[{progress*100/20:3.0f}%]',  # percent
-              f'({self._current_size/1024/1024:6.2f}/',  # current_siz
+              f'({self._current_size/1024/1024:6.2f}/',  # current_size
               f'{self.size/1024/1024:6.2f}MB)|',  # total_size
               'x' * progress, '.' * (20 - progress),  # naive progress bar
               '\r', ConsoleColor.ENDC, sep='', end='')
@@ -163,7 +166,8 @@ class MediaCollection(list):
     """class for handle list of medias."""
     arg = Arguments()
 
-    def __init__(self, members: List[Media] = None, salt: Optional[str] = ''):
+    def __init__(self, members: List[Media] = None, *,
+                 salt: Optional[str] = ''):
         """Initialization
 
         Args:
@@ -175,7 +179,7 @@ class MediaCollection(list):
         super().__init__(members)
 
         self.salt = salt
-        self.location = None
+        self.location = None  # will be set by Video outsite.
 
     def get_location(self) -> str:
         """return media collection's location, add salt."""
@@ -188,7 +192,8 @@ class MediaCollection(list):
 
     def add_media(self, media: Media) -> None:
         """add media resource into media collection."""
-        media.location = self.get_location()
+        if media.location is None:
+            media.location = self.get_location()
         super().append(media)
 
     async def download(self) -> None:
@@ -202,8 +207,9 @@ class MediaCollection(list):
         tb = PrettyTable()
         tb.field_names = ['index', 'name', 'desc', 'size']
         for index, media in enumerate(self, 1):
-            tb.add_row([index, os.path.split(media.location)[1],
-                        media.desc, media.size])
+            tb.add_row([
+                index, os.path.split(media.location)[1], media.desc, media.size
+            ])
         return tb.get_string()
 
     def merge(self) -> None:
@@ -220,24 +226,27 @@ class MediaCollection(list):
         cmd += ['-codec', 'copy', self.location, '-y']
 
         # call command provided by opration system
-        subprocess.run(cmd, stdout=subprocess.DEVNULL,
-                       stderr=subprocess.STDOUT, check=True)
+        subprocess.run(cmd,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
+                       check=True)
 
         # remove temporary files
         for item in self:
             os.remove(item.location)
 
-    def sort_media(self):
-        super().sort(key=lambda item: item.size, reverse=True)
+    def sort_media(self, reverse: bool = True) -> None:
+        """sort medias in media collection, biggest one will be the first."""
+        super().sort(key=lambda item: item.size, reverse=reverse)
 
 
 class Video(object):
     """presents a video."""
     arg = Arguments()
 
-    max_conn = arg.max_conn
     directory = arg.directory
     interactive = arg.interactive
+    lists = arg.lists
+    max_conn = arg.max_conn
 
     def __init__(self, client_session: aiohttp.ClientSession,
                  suffix: Optional[str] = 'mp4'):
@@ -255,7 +264,7 @@ class Video(object):
 
         # attributes read from config file or user's input
         self.root_folder = self.directory
-        self.use_parent_folder = None
+        self.use_parent_folder = self.lists
 
         # attributes should be set by spider
         self.suffix = suffix
@@ -266,7 +275,7 @@ class Video(object):
         self.media_collection = {
             'picture': MediaCollection(salt='picture'),  # video without sound
             'sound': MediaCollection(salt='sound'),  # video without picture
-            'video': MediaCollection(salt=''),  # video = picture + sound
+            'video': MediaCollection(),  # video = picture + sound
         }
 
     def get_folder(self) -> str:
@@ -287,7 +296,8 @@ class Video(object):
             target: the collection will add a media resource. default value is
                 'video', means the media with picture and sound.
         """
-        self.media_collection[target].location = self.get_location()
+        if self.media_collection[target].location is None:
+            self.media_collection[target].location = self.get_location()
         self.media_collection[target].add_media(media)
 
     def choose_collection(self) -> MediaCollection:
@@ -311,30 +321,17 @@ class Video(object):
 
             # choose from 'picture' and 'sound' media collection
             if self.interactive is False:
-                info('choose', 'using default value...')
-                self.media_collection['video'] = MediaCollection([
-                    self.media_collection['picture'][0],
-                    self.media_collection['sound'][0],
-                ])
+                info('choose', 'using default value (the first one)...')
+                v, a = 1, 1
             else:
-                info('choose', 'please choose a video below...')
-                print(self.media_collection['picture'])
-                info('choose', 'please choose a audio below...')
-                print(self.media_collection['sound'])
+                for key in ['picture', 'sound']:
+                    info('choose', f'please choose a {key} below...')
+                    print(self.media_collection[key])
+                v, a = ask_user(count=2, default=1)
 
-                answer = input("What's your answer(default: 1 1):").strip()
-                if not answer:
-                    v, a = 1, 1
-                else:
-                    v, a = [int(item) for item in answer.split(' ')]
-                self.media_collection['video'] = MediaCollection([
-                    self.media_collection['picture'][v - 1],
-                    self.media_collection['sound'][a - 1],
-                ])
-
-            # set media collection's location
-            self.media_collection['video'].location = self.get_location()
             info('choosed', '↓↓↓↓↓↓↓↓↓↓↓')
+            self.add_media(self.media_collection['picture'][v - 1])
+            self.add_media(self.media_collection['sound'][a - 1])
             print(self.media_collection['video'])
 
     async def download(self) -> None:

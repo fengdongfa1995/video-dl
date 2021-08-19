@@ -1,22 +1,18 @@
 """toolbox which provides lots of helper function.
 
 class UserAgent deals with user agent.
-class Config deals with config information.
 
 Avaliable function:
     UserAgent().random: get a random user agent.
-    Config().get_cookie(site): get a site's cookie.
-    Configi().something: get the value combined to the key 'something'.
+    info: print prompt message.
+    ask_user: ask user to provide a string of numbers.
 
-    progress_bar: print a naive progress bar.
-
-Typical usage example:
+Typical usage:
     random_ua = UserAgent().random
-
-    config = Config()
-    bilibili_cookie = config.get_cookie('bilibili')
-    threshold = config.big_file_threshold
+    info('url', 'https://www.bilibili.com/video/xxx')
+    video_index, audio_index = ask_user(count=2, default=1)
 """
+from typing import Optional
 import os
 import random
 
@@ -69,5 +65,17 @@ def info(label: str, *args, **kwargs) -> None:
           *args, ConsoleColor.ENDC, **kwargs)
 
 
-if __name__ == '__main__':
-    info('download', 'chifanba', 'lajiche ')
+def ask_user(count: Optional[int] = 2, default: Optional[int] = 1) -> tuple:
+    """ask user to provide answers.
+
+    Args:
+        count: count of required answer.
+        default: default value.
+    """
+    prompt = ('What is your answer(space to separate, enter to use default: '
+              f'{default}):')
+    answer = input(prompt).strip()
+    if not answer:
+        return (default, ) * count
+    else:
+        return tuple(int(item) for item in answer.split(' '))
