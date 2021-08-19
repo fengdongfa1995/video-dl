@@ -29,7 +29,7 @@ video_dl 'https://www.bilibili.com/video/BV15L411p7M8'
 ```bash
 video_dl -i 'https://www.bilibili.com/video/BV15L411p7M8'
 ```
-![Normal Usage](screenshots/interactive.gif)
+![Normal Usage](https://github.com/fengdongfa1995/video_dl/raw/main/screenshots/interactive.gif)
 
 ## Help document
 ```bash
