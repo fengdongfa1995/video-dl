@@ -24,7 +24,7 @@ video_dl 'https://www.bilibili.com/video/BV15L411p7M8'
 ```
 > :warning: the `highest` depends my own view, maybe not the one you want.
 
-![Normal Usage](screenshots/normal_usage.gif)
+![Normal Usage](https://github.com/fengdongfa1995/video_dl/raw/main/screenshots/normal_usage.gif)
 ### download video which definition will be selected manually
 ```bash
 video_dl -i 'https://www.bilibili.com/video/BV15L411p7M8'
