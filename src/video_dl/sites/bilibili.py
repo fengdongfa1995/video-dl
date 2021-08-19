@@ -15,7 +15,7 @@ class BilibiliSpider(Spider):
     home_url = 'https://www.bilibili.com'
 
     # re patterns to extract information from html source code
-    re_initial_state = re.compile(r'window.__INITIAL_STATE__=(.*?);')
+    re_initial_state = re.compile(r'__INITIAL_STATE__=(.*?);\(function\(\)')
     re_playinfo = re.compile(r'window.__playinfo__=(.*?)</script>')
 
     def __init__(self):
