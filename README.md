@@ -1,6 +1,8 @@
 # video-dl
 
 [![PyPI version](https://img.shields.io/pypi/v/video_dl.svg)](https://pypi.org/project/video-dl/)
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/fengdongfa1995/video-dl)
+
 ---
 
 `video-dl` is a naive online video downloader based on [aiohttp](https://docs.aiohttp.org/en/stable/).
