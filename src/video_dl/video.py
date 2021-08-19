@@ -336,6 +336,12 @@ class Video(object):
 
     async def download(self) -> None:
         """download medias contained in video media collection."""
+        # create directory if necessary
+        folder = self.get_folder()
+        if folder != self.root_folder:
+            if os.path.exists(folder) is False or os.path.isfile(folder):
+                os.mkdir(self.get_folder())
+
         await self.media_collection['video'].download()
 
     def merge(self) -> None:

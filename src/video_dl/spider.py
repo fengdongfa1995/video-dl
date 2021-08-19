@@ -7,6 +7,7 @@ Typical usage:
 """
 from urllib.parse import urlparse
 import aiohttp
+import asyncio
 
 from video_dl.args import Arguments
 from video_dl.toolbox import UserAgent, info
@@ -33,6 +34,7 @@ class Spider(object):
     diretory = arg.directory
     proxy = arg.proxy
     url = arg.url
+    lists = arg.lists
 
     @classmethod
     def create_spider(cls, url: str):
@@ -77,8 +79,9 @@ class Spider(object):
 
     async def downloading(self) -> None:
         """download video from web."""
-        for video in self.video_list:
-            await video.download()
+        await asyncio.wait([
+            asyncio.create_task(video.download()) for video in self.video_list
+        ])
 
     def after_downloaded(self) -> None:
         """do something after downloaded video."""

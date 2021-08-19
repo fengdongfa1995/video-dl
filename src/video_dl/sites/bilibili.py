@@ -1,4 +1,6 @@
 """Everything used for downloading video in bilibili.com."""
+from urllib.parse import urljoin
+import asyncio
 import json
 import re
 
@@ -21,9 +23,18 @@ class BilibiliSpider(Spider):
 
         # video definition's id to definition's description
         self.id2desc = None
+        self.video_pages = set()
 
     async def before_download(self) -> None:
+        # parse origin html
         await self.parse_html(self.url)
+
+        if self.lists and self.video_pages:
+            info('list', 'tring to fetch more videos...')
+            await asyncio.wait([asyncio.create_task(self.parse_html(url))
+                                for url in self.video_pages])
+
+        # choose media resource
         for video in self.video_list:
             video.choose_collection()
 
@@ -43,9 +54,19 @@ class BilibiliSpider(Spider):
 
         resp = await self.fetch_html(target_url)
 
-        # get video's title and set file path
         state = json.loads(self.re_initial_state.search(resp).group(1))
-        video.title = state['videoData']['title']
+        current_page = state['p']
+        pages = state['videoData']['pages']
+        for page in pages:
+            if page['page'] == current_page:
+                video.title = page['part']
+            else:
+                # if there is other video in the same playlist
+                video.parent_folder = state['videoData']['title']  # set folder
+                if len(pages) > len(self.video_pages) + 1:
+                    self.video_pages.add(  # ready to create task
+                        urljoin(self.url, f'?p={page["page"]}')
+                    )
 
         playinfo = json.loads(self.re_playinfo.search(resp).group(1))
         if self.id2desc is None:
