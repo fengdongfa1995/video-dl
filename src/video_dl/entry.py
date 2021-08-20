@@ -15,7 +15,7 @@ if platform.system() != 'Windows':
 
 def main():
     # get url from command line's augument and create a specifc spider.
-    spider = Spider.create_spider(Arguments().url)
+    spider = Spider.create(Arguments().url)
 
     # start spider and download video.
     start_time = time.time()

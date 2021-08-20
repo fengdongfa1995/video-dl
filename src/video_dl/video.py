@@ -159,8 +159,8 @@ class Media(object):
               f'({self._current_size/1024/1024:6.2f}/',  # current_size
               f'{self.size/1024/1024:6.2f}MB)|',  # total_size
               'x' * progress, '.' * (20 - progress),  # naive progress bar
-              ' ', os.path.split(self.location)[1],
-              '\r', ConsoleColor.ENDC, sep='', end='')
+              ' ', ConsoleColor.OKCYAN, os.path.split(self.location)[1],
+              ConsoleColor.ENDC, '\r', ConsoleColor.ENDC, sep='', end='')
 
 
 class MediaCollection(list):

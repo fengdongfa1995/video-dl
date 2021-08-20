@@ -37,7 +37,7 @@ class Spider(object):
     lists = arg.lists
 
     @classmethod
-    def create_spider(cls, url: str):
+    def create(cls, url: str):
         """create a specific subclass depends on url."""
         netloc = urlparse(url).netloc
         for subclass in cls.__subclasses__():
@@ -61,7 +61,11 @@ class Spider(object):
     async def create_session(self) -> None:
         """create client seesion if not exist."""
         if self.session is None:
-            self.session = aiohttp.ClientSession(headers=self.headers)
+            conn = aiohttp.connector.TCPConnector(
+                force_close=True, enable_cleanup_closed=True, verify_ssl=False
+            )
+            self.session = aiohttp.ClientSession(headers=self.headers,
+                                                 connector=conn)
 
     async def close_session(self) -> None:
         """close client session if possible."""
@@ -100,6 +104,6 @@ class Spider(object):
 
 
 # import subclasses of Spider.
-# You should import XxxSpider in sites/__init__.py
+# You should import XxxSpider in spiders/__init__.py
 # then Spider.__subclasses__() could be workable.
-import video_dl.sites  # pylint: disable=import-error
+import video_dl.spiders  # pylint: disable=import-error
