@@ -50,8 +50,12 @@ class BilibiliSpider(Spider):
         video.title = self.extractor.get_title(resp)
         video.parent_folder = self.extractor.get_parent_folder(resp)
 
-        for picture in self.extractor.get_pictures(resp):
-            video.add_media(Media(**picture), target='picture')
+        try:
+            for picture in self.extractor.get_pictures(resp):
+                video.add_media(Media(**picture), target='picture')
+        except KeyError:
+            info('fail', f'please check your authority in {target_url}')
+            return
 
         for sound in self.extractor.get_sounds(resp):
             video.add_media(Media(**sound), target='sound')

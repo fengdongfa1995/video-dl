@@ -7,8 +7,9 @@ class Extractor(object):
     def create(cls, url: str):
         """return a specific Extractor depends on url."""
         for subclass in cls.__subclasses__():
-            if subclass.pattern.search(url):
-                return subclass()
+            for pattern in subclass.pattern:
+                if pattern.search(url):
+                    return subclass()
         raise NotImplementedError
 
 

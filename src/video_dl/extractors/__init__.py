@@ -1,1 +1,1 @@
-from .bilibili import BilibiliVideoExtractor
+from .bilibili import BilibiliVideoExtractor, BilibiliBangumiExtractor

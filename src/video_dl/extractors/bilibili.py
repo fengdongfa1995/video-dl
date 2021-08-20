@@ -8,7 +8,9 @@ from video_dl.extractor import Extractor
 
 class BilibiliVideoExtractor(Extractor):
     """bilibili information extractor."""
-    pattern = re.compile('bilibili.com/video/BV.*')
+    pattern = [
+        re.compile('bilibili.com/video/BV.*'),
+    ]
 
     # re patterns to extract information from html source code
     re_state = re.compile(r'__INITIAL_STATE__=(.*?);\(function\(\)')
@@ -87,3 +89,30 @@ class BilibiliVideoExtractor(Extractor):
         for page in pages:
             if (index := page['page']) != current_page:
                 yield urljoin(base_url, f'?p={index}')
+
+
+class BilibiliBangumiExtractor(BilibiliVideoExtractor, Extractor):
+    """extractor for bilibili bangumi"""
+    pattern = [
+        re.compile('bilibili.com/bangumi/play/ep.*'),
+    ]
+
+    def get_title(self, resp: str) -> str:
+        """get video's title from html source code."""
+        state = json.loads(self.re_state.search(resp).group(1))
+        return state['h1Title']
+
+    def get_parent_folder(self, resp: str) -> str:
+        """get video's parent folder from html source code."""
+        state = json.loads(self.re_state.search(resp).group(1))
+        return state['mediaInfo']['season_title']
+
+    def generate_urls(self, resp: str, base_url: str) -> list:
+        """generate urls from html resource code."""
+        state = json.loads(self.re_state.search(resp).group(1))
+
+        pages = state['mediaInfo']['episodes']
+        for page in pages:
+            url = page['link'].replace('/u002f', '/')
+            if url not in base_url:
+                yield url
