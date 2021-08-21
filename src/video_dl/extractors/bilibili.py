@@ -95,6 +95,7 @@ class BilibiliBangumiExtractor(BilibiliVideoExtractor, Extractor):
     """extractor for bilibili bangumi"""
     pattern = [
         re.compile('bilibili.com/bangumi/play/ep.*'),
+        re.compile('bilibili.com/bangumi/play/ss.*'),
     ]
 
     def get_title(self, resp: str) -> str:

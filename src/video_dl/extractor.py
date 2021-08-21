@@ -11,6 +11,3 @@ class Extractor(object):
                 if pattern.search(url):
                     return subclass()
         raise NotImplementedError
-
-
-import video_dl.extractors

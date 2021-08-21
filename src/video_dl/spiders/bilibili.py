@@ -1,5 +1,6 @@
 """Spider for bilibili.com"""
 import asyncio
+import re
 
 from video_dl.spider import Spider
 from video_dl.toolbox import info
@@ -12,26 +13,20 @@ class BilibiliSpider(Spider):
     site = 'bilibili.com'
     home_url = 'https://www.bilibili.com'
 
+    pattern = [
+        re.compile('bilibili.com/bangumi/play/ep.*'),
+        re.compile('bilibili.com/video/BV.*'),
+    ]
+
     def __init__(self):
         super().__init__()
 
         # video definition's id to definition's description
         self.id2desc = None
-        self.video_pages = set()
-        self.extractor = Extractor.create(self.url)
+        self.list_video_already_flag = False
 
     async def before_download(self) -> None:
-        # parse origin html
         await self.parse_html(self.url)
-
-        if self.lists and self.video_pages:
-            info('list', 'tring to fetch more videos...')
-            await asyncio.wait([asyncio.create_task(self.parse_html(url))
-                                for url in self.video_pages])
-
-        # choose media resource
-        for video in self.video_list:
-            video.choose_collection()
 
     def after_downloaded(self) -> None:
         for video in self.video_list:
@@ -44,24 +39,50 @@ class BilibiliSpider(Spider):
             target_url: target url copied from online vide website.
         """
         info('url', target_url)
-        resp = await self.fetch_html(target_url)
+        resp, target_url = await self.fetch_html(target_url)
+        extractor = Extractor.create(target_url)
 
-        video = Video(self.session)  # need a session to access internet
-        video.title = self.extractor.get_title(resp)
-        video.parent_folder = self.extractor.get_parent_folder(resp)
+        # should we extract video information in this target_url
+        extract_flag = False
+        for pattern in self.pattern:
+            if pattern.search(target_url):
+                extract_flag = True
+                break
 
-        try:
-            for picture in self.extractor.get_pictures(resp):
-                video.add_media(Media(**picture), target='picture')
-        except KeyError:
-            info('fail', f'please check your authority in {target_url}')
+        if extract_flag is False:
+            urls = extractor.generate_urls(resp, self.url)
+            await self.parse_html(next(urls))
             return
 
-        for sound in self.extractor.get_sounds(resp):
+        video = Video(self.session)  # need a session to access internet
+        video.title = extractor.get_title(resp)
+
+        if self.lists:
+            video.parent_folder = extractor.get_parent_folder(resp)
+
+        try:
+            for picture in extractor.get_pictures(resp):
+                video.add_media(Media(**picture), target='picture')
+        except Exception:  # pylint: disable=W0703
+            info(
+                'failed',
+                f'check authority in {target_url} or post it to github issues.'
+            )
+            return
+
+        for sound in extractor.get_sounds(resp):
             video.add_media(Media(**sound), target='sound')
 
-        if not self.video_pages:
-            self.video_pages.update(
-                self.extractor.generate_urls(resp, self.url))
-
         self.video_list.append(video)
+
+        if self.lists and self.list_video_already_flag is False:
+            info('list', 'tring to fetch more videos...')
+            self.list_video_already_flag = True
+            tasks = [self.parse_html(url)
+                     for url in extractor.generate_urls(resp, self.url)]
+
+            if tasks:
+                info('list', f'fetched {len(tasks)} more video(s)...')
+                await asyncio.gather(*tasks)
+            else:
+                info('list', 'fetched nothing!')

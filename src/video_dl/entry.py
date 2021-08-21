@@ -6,6 +6,8 @@ import time
 from video_dl.args import Arguments
 from video_dl.spider import Spider
 from video_dl.toolbox import info
+import video_dl.spiders  # pylint: disable=W0611
+import video_dl.extractors  # pylint: disable=W0611
 
 
 if platform.system() != 'Windows':

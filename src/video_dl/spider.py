@@ -72,10 +72,14 @@ class Spider(object):
         if self.session:
             await self.session.close()
 
-    async def fetch_html(self, url: str) -> str:
+    async def fetch_html(self, url: str) -> tuple:
         """get url's html source code from internet."""
         async with self.session.get(url=url, proxy=self.proxy) as r:
-            return await r.text()
+            # maybe exist redirection
+            # TODO: watch out more redirections to modify index in r.history
+            if r.history:
+                url = r.history[0].headers['location']
+            return await r.text(), url
 
     async def before_download(self) -> None:
         """do something before download"""
@@ -83,9 +87,12 @@ class Spider(object):
 
     async def downloading(self) -> None:
         """download video from web."""
-        await asyncio.wait([
-            asyncio.create_task(video.download()) for video in self.video_list
-        ])
+        tasks = []
+        for video in self.video_list:
+            video.choose_collection()
+            tasks.append(video.download())
+
+        await asyncio.gather(*tasks)
 
     def after_downloaded(self) -> None:
         """do something after downloaded video."""
@@ -101,9 +108,3 @@ class Spider(object):
         self.after_downloaded()
 
         await self.close_session()
-
-
-# import subclasses of Spider.
-# You should import XxxSpider in spiders/__init__.py
-# then Spider.__subclasses__() could be workable.
-import video_dl.spiders  # pylint: disable=import-error
