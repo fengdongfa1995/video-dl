@@ -1,7 +1,5 @@
 # video-dl
-[![example workflow](https://github.com/fengdongfa1995/video-dl/actions/workflows/pypi.yml/badge.svg)](https://github.com/fengdongfa1995/video-dl/actions)
 [![PyPI version](https://img.shields.io/pypi/v/video_dl.svg)](https://pypi.org/project/video-dl/) 
-[![Join the chat at https://gitter.im/fengdongfa1995/video-dl](https://badges.gitter.im/fengdongfa1995/video-dl.svg)](https://gitter.im/fengdongfa1995/video-dl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 `video-dl` is a naive online video downloader based on [aiohttp](https://docs.aiohttp.org/en/stable/).
 
