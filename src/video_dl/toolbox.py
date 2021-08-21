@@ -76,6 +76,11 @@ def ask_user(count: Optional[int] = 2, default: Optional[int] = 1) -> tuple:
               f'{default}):')
     answer = input(prompt).strip()
     if not answer:
-        return (default, ) * count
+        result = (default, ) * count
     else:
-        return tuple(int(item) for item in answer.split(' '))
+        result = tuple(int(item) for item in answer.split(' '))
+
+    if len(result) == 1:
+        return result[0]
+    else:
+        return result

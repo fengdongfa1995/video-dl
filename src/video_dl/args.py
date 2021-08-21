@@ -2,21 +2,19 @@
 
 Typical usage:
     args = Arguments()
-    url = args.url
     cookie = args.cookie
-    proxy = args.proxy
-    interactive_flag = args.interactive
+    url = args.url
 
 Available arguments:
+    big_file_threshold: file size exceeds this threshold will be sliced.
+    chunk_size: chunk size to read from stream.
+    cookie: user's own cookie.
+    directory: set a target directory to save video.
     interactive: choose media resource manually.
     lists: try to find a playlist and download all video contained in it.
-    directory: set a target directory to save video.
-    cookie: user's own cookie.
+    max_conn: maximum connections simultaneously.
     proxy: internet proxy.
     url: target url.
-    max_conn: maximum connections simultaneously.
-    chunk_size: chunk size to read from stream.
-    big_file_threshold: file size exceeds this threshold will be sliced.
 """
 from typing import Any
 import argparse

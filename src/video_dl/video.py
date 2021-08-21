@@ -40,10 +40,10 @@ semaphore = contextvars.ContextVar('asyncio.Semaphore', default=None)
 
 class Media(object):
     """Class used to handle media."""
-    arg = Arguments()
+    args = Arguments()
 
-    _chunk_size = arg.chunk_size
-    _threshold = arg.big_file_threshold
+    _threshold = args.big_file_threshold
+    _proxy = args.proxy
 
     def __init__(self, *, url: str,
                  size: Optional[int] = 0,
@@ -86,7 +86,9 @@ class Media(object):
     async def _set_size(self) -> None:
         """set media file's real size by parsing server's response headers."""
         headers = {'range': 'bytes=0-1'}
-        async with session.get().get(url=self.url, headers=headers) as r:
+        async with session.get().get(
+            url=self.url, headers=headers, proxy=self._proxy
+        ) as r:
             self.size = int(r.headers['Content-Range'].split('/')[1])
 
     def _get_headers(self, index: Optional[int] = 0) -> dict:
@@ -142,12 +144,14 @@ class Media(object):
         headers = self._get_headers(index)  # get headers to send to server
 
         async with semaphore.get():
-            async with session.get().get(url=self.url, headers=headers) as r:
+            async with session.get().get(
+                url=self.url, headers=headers, proxy=self._proxy
+            ) as r:
                 with open(target, 'wb') as f:
-                    async for chk in r.content.iter_chunked(self._chunk_size):
-                        f.write(chk)
+                    async for chunk in r.content.iter_any():
+                        f.write(chunk)
 
-                        self._current_size += self._chunk_size
+                        self._current_size += len(chunk)
                         self._print_progress()
 
     def _print_progress(self) -> None:
@@ -314,7 +318,17 @@ class Video(object):
             self.media_collection['video'].sort_media()
 
             # choose from 'video' media collection
-            raise NotImplementedError('just wait!')
+            if self.interactive is False:
+                info('choose', 'using default value (the first one)...')
+                v = 1
+            else:
+                info('choose', 'please choose a video below...')
+                print(self.media_collection['video'])
+                v = ask_user(count=1, default=1)
+
+            media = self.media_collection['video'][v - 1]
+            self.media_collection['video'].clear()
+            self.add_media(media)
         else:
             # sort item in media collection
             self.media_collection['picture'].sort_media()
@@ -330,10 +344,15 @@ class Video(object):
                     print(self.media_collection[key])
                 v, a = ask_user(count=2, default=1)
 
-            info('choosed', '↓↓↓↓↓↓↓↓↓↓↓')
             self.add_media(self.media_collection['picture'][v - 1])
             self.add_media(self.media_collection['sound'][a - 1])
-            print(self.media_collection['video'])
+
+        info('choosed', '↓↓↓↓↓↓↓↓↓↓↓')
+        print(self.media_collection['video'])
+
+        # save memory
+        del self.media_collection['picture']
+        del self.media_collection['sound']
 
     async def download(self) -> None:
         """download medias contained in video media collection."""

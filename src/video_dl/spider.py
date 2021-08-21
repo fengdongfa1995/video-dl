@@ -2,7 +2,7 @@
 
 Typical usage:
     url = 'https://www.bilibili.com/video/BV15L411p7M8'
-    spider = Spider.create_spider(url)  # will return a BilibiliSpider object
+    spider = Spider.create(url)  # will return a BilibiliSpider object
     asycio.run(spider.run())  # try to fetch resource information and download
 """
 from urllib.parse import urlparse
@@ -80,6 +80,11 @@ class Spider(object):
             if r.history:
                 url = r.history[0].headers['location']
             return await r.text(), url
+
+    async def fetch_json(self, url: str) -> dict:
+        """fetch json from url."""
+        async with self.session.get(url=url, proxy=self.proxy) as r:
+            return await r.json()
 
     async def before_download(self) -> None:
         """do something before download"""

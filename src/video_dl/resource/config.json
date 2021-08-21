@@ -1,6 +1,5 @@
 {
     "directory": ".",
-    "max_conn": 10,
-    "chunk_size": 1024,
+    "max_conn": 15,
     "big_file_threshold": 104857600
 }
