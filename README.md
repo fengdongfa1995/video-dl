@@ -5,7 +5,7 @@
 
 ## Prerequisites
 - [ffmpeg](https://ffmpeg.org/) used to merge picture and sound to a complete video.
-- [python](https://www.python.org) 3.7 or above (required by [aiohttp](https://docs.aiohttp.org/en/stable/)).
+- [python](https://www.python.org) 3.8 or above (required by `:=` oprator).
 
 ## Installation
 ```bash
@@ -37,6 +37,14 @@ video-dl -i 'https://www.bilibili.com/video/BV15L411p7M8'
 video-dl -d ~/tmp 'https://www.bilibili.com/video/BV15L411p7M8'
 ```
 ![set download directory](https://github.com/fengdongfa1995/video-dl/raw/main/screenshots/directory.gif)
+
+
+### download video via your proxy
+> :underage: we have to access some non-existing sites via proxy.
+```bash
+video-dl -p http://172.30.176.1:10809 'https://cn.pornhub.com/view_video.php?viewkey=ph5c87e70498951'
+```
+![use proxy](https://github.com/fengdongfa1995/video-dl/raw/main/screenshots/proxy.gif)
 
 ## Help document
 ```bash
