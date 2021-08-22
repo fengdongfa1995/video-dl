@@ -1,8 +1,13 @@
 """extract information from html source code of bilibili.com."""
 from urllib.parse import urljoin
 import json
+import os
 import re
 
+from google.protobuf.json_format import MessageToJson
+import execjs
+
+from video_dl.sites.bilibili.dm_pb2 import DmSegMobileReply
 from video_dl.extractor import Extractor
 
 
@@ -18,6 +23,17 @@ class BilibiliVideoExtractor(Extractor):
 
     def __init__(self):
         self.id2desc = None
+
+        # ready to use javascript code
+        with open(os.path.join(os.path.dirname(__file__), 'ass.js')) as f:
+            self.js_code = execjs.compile(f.read())
+
+    def jsonsub_to_asssub(self, title: str, sub_list: list) -> str:
+        """json substitle to ass substitle."""
+        try:
+            return self.js_code.call('xmlDanmakus', title, sub_list)
+        except Exception:  # pylint: disable=W0703
+            return ''
 
     def get_title(self, resp: str) -> str:
         """get video's title from html source code."""
@@ -90,6 +106,20 @@ class BilibiliVideoExtractor(Extractor):
             if (index := page['page']) != current_page:
                 yield urljoin(base_url, f'?p={index}')
 
+    def get_oid_pid(self, resp: str, base_url: str = None) -> tuple:
+        """get oid and pid from html source code."""
+        del base_url
+        state = json.loads(self.re_state.search(resp).group(1))
+        oid = state['videoData']['cid']
+        pid = state['aid']
+        return oid, pid
+
+    def get_dm(self, bytes_stream: str) -> dict:
+        """generate json dictionary from binary stream."""
+        dm = DmSegMobileReply()
+        dm.ParseFromString(bytes_stream)
+        return json.loads(MessageToJson(dm))
+
 
 class BilibiliBangumiExtractor(BilibiliVideoExtractor, Extractor):
     """extractor for bilibili bangumi"""
@@ -117,3 +147,14 @@ class BilibiliBangumiExtractor(BilibiliVideoExtractor, Extractor):
             url = page['link'].replace('/u002f', '/')
             if url not in base_url:
                 yield url
+
+    def get_oid_pid(self, resp: str, base_url: str) -> tuple:
+        """get oid and pid from html source code."""
+        state = json.loads(self.re_state.search(resp).group(1))
+        pages = state['mediaInfo']['episodes']
+        for page in pages:
+            url = page['link'].replace('/u002f', '/')
+            if url in base_url:
+                oid = page['cid']
+                pid = page['aid']
+                return oid, pid

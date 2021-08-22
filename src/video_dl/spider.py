@@ -81,6 +81,13 @@ class Spider(object):
                 url = r.history[0].headers['location']
             return await r.text(), url
 
+    async def fetch_content(self, url: str, params: None) -> str:
+        """fetch content from url."""
+        async with self.session.get(
+            url=url, proxy=self.proxy, params=params
+        ) as r:
+            return await r.read()
+
     async def fetch_json(self, url: str) -> dict:
         """fetch json from url."""
         async with self.session.get(url=url, proxy=self.proxy) as r:
@@ -99,7 +106,7 @@ class Spider(object):
 
         await asyncio.gather(*tasks)
 
-    def after_downloaded(self) -> None:
+    async def after_downloaded(self) -> None:
         """do something after downloaded video."""
         pass
 
@@ -110,6 +117,6 @@ class Spider(object):
 
         await self.before_download()
         await self.downloading()
-        self.after_downloaded()
+        await self.after_downloaded()
 
         await self.close_session()

@@ -283,6 +283,9 @@ class Video(object):
             'video': MediaCollection(),  # video = picture + sound
         }
 
+        # used to hold something else
+        self.meta_data = {}
+
     def get_folder(self) -> str:
         """return video's store folder."""
         if self.parent_folder is not None and self.use_parent_folder is True:
@@ -367,3 +370,10 @@ class Video(object):
     def merge(self) -> None:
         """merge medias contained in video media collection."""
         self.media_collection['video'].merge()
+
+    def save_to_disk(self, content: str, suffix: str) -> None:
+        """save something to disk with same name but different suffix."""
+        path, _ = os.path.splitext(self.get_location())
+        path = f'{path}.{suffix}'
+        with open(path, 'w') as f:
+            f.write(content)
