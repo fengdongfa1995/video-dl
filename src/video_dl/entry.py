@@ -12,6 +12,8 @@ import video_dl.sites  # pylint: disable=W0611
 if platform.system() != 'Windows':
     import uvloop
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+else:
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 def main():

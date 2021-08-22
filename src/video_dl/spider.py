@@ -65,7 +65,8 @@ class Spider(object):
                 force_close=True, enable_cleanup_closed=True, verify_ssl=False
             )
             self.session = aiohttp.ClientSession(headers=self.headers,
-                                                 connector=conn)
+                                                 connector=conn,
+                                                 trust_env=True)
 
     async def close_session(self) -> None:
         """close client session if possible."""
