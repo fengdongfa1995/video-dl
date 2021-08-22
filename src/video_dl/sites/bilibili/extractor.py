@@ -28,7 +28,7 @@ class BilibiliVideoExtractor(Extractor):
         with open(os.path.join(
             os.path.dirname(__file__), '..', '..',
             'resource', 'bilibili_sub.js'
-        )) as f:
+        ), 'r', encoding='utf-8') as f:
             self.js_code = execjs.compile(f.read())
 
     def jsonsub_to_asssub(self, title: str, sub_list: list) -> str:

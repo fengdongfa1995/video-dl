@@ -128,3 +128,6 @@ class BilibiliSpider(Spider):
         ass_sub = self.extractor.jsonsub_to_asssub(video.title, result)
         if ass_sub:
             video.save_to_disk(ass_sub, 'ass')
+        else:
+            info('warn',
+                 'please install a javascript runtime to download subtitles.')

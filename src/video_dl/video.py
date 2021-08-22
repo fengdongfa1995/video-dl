@@ -375,5 +375,5 @@ class Video(object):
         """save something to disk with same name but different suffix."""
         path, _ = os.path.splitext(self.get_location())
         path = f'{path}.{suffix}'
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             f.write(content)
