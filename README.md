@@ -99,4 +99,4 @@ You could find how to install system prerequisites, FAQ and something else in [g
 # Getting Involved
 You could discuss with me in [github's Discussions](https://github.com/fengdongfa1995/video-dl/discussions),
 find bugs or submit your excelent ideas in [github's Issues](https://github.com/fengdongfa1995/video-dl/issues),
-my last and the bigges wish is getting your [pull requests](https://github.com/fengdongfa1995/video-dl/pulls) to improve this naive tool.
+my last and the biggest wish is getting your [pull requests](https://github.com/fengdongfa1995/video-dl/pulls) to improve this naive tool.
