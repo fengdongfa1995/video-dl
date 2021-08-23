@@ -1,11 +1,9 @@
 """extract information from html source code of bilibili.com."""
 from urllib.parse import urljoin
 import json
-import os
 import re
 
 from google.protobuf.json_format import MessageToJson
-import execjs
 
 from video_dl.sites.bilibili.dm_pb2 import DmSegMobileReply
 from video_dl.extractor import Extractor
@@ -23,13 +21,6 @@ class BilibiliVideoExtractor(Extractor):
 
     def __init__(self):
         self.id2desc = None
-
-        # ready to use javascript code
-        with open(os.path.join(
-            os.path.dirname(__file__), '..', '..',
-            'resource', 'bilibili_sub.js'
-        ), 'r', encoding='utf-8') as f:
-            self.js_code = execjs.compile(f.read())
 
     def jsonsub_to_asssub(self, title: str, sub_list: list) -> str:
         """json substitle to ass substitle."""
@@ -60,7 +51,7 @@ class BilibiliVideoExtractor(Extractor):
         if len(pages) > 1:
             return state['videoData']['title']
         else:
-            return None
+            return None  # just one video doesn't need to create parent folder
 
     def get_pictures(self, resp: str) -> list:
         """get pictures' information from html source code."""
@@ -121,7 +112,7 @@ class BilibiliVideoExtractor(Extractor):
         """generate json dictionary from binary stream."""
         dm = DmSegMobileReply()
         dm.ParseFromString(bytes_stream)
-        return json.loads(MessageToJson(dm))
+        return json.loads(MessageToJson(dm))['elems']
 
 
 class BilibiliBangumiExtractor(BilibiliVideoExtractor, Extractor):

@@ -11,6 +11,7 @@ import asyncio
 
 from video_dl.args import Arguments
 from video_dl.toolbox import UserAgent, info
+from video_dl.video import Video
 
 
 class Spider(object):
@@ -55,23 +56,25 @@ class Spider(object):
             'origin': self.home_url,
         }
 
-        # list that contains Videos
+        # list that contains Videos ready to download
         self.video_list = []
 
     async def create_session(self) -> None:
         """create client seesion if not exist."""
-        if self.session is None:
+        if not self.session:
             conn = aiohttp.connector.TCPConnector(
                 force_close=True, enable_cleanup_closed=True, verify_ssl=False
             )
-            self.session = aiohttp.ClientSession(headers=self.headers,
-                                                 connector=conn,
-                                                 trust_env=True)
+            self.session = aiohttp.ClientSession(
+                headers=self.headers, connector=conn, trust_env=True)
 
     async def close_session(self) -> None:
         """close client session if possible."""
         if self.session:
             await self.session.close()
+
+    def create_video(self) -> Video:
+        return Video(self.session)
 
     async def fetch_html(self, url: str) -> tuple:
         """get url's html source code from internet."""
@@ -79,7 +82,7 @@ class Spider(object):
             # maybe exist redirection
             # TODO: watch out more redirections to modify index in r.history
             if r.history:
-                url = r.history[0].headers['location']
+                url = r.history[0].headers['location']  # TODO: maybe 0 -> -1
             return await r.text(), url
 
     async def fetch_content(self, url: str, params: None) -> str:
@@ -112,7 +115,7 @@ class Spider(object):
         pass
 
     async def run(self) -> None:
-        """start crawl."""
+        """start crawl and download videos."""
         info('site', self.site)
         await self.create_session()
 

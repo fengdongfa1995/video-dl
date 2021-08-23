@@ -3,7 +3,6 @@
 Typical usage:
     url = 'https://www.bilibili.com/video/BV15L411p7M8'
     extractor = Extractor.create(url)  # will return a BilibiliVideoExtractor
-    extractor.get_title(resp)  # find the title of a video from html source
 """
 
 

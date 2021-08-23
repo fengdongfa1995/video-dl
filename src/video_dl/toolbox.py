@@ -1,7 +1,5 @@
 """toolbox which provides lots of helper function.
 
-class UserAgent deals with user agent.
-
 Avaliable function:
     UserAgent().random: get a random user agent.
     info: print prompt message.
@@ -15,6 +13,7 @@ Typical usage:
 from typing import Optional
 import os
 import random
+import readline  # pylint: disable=W0611
 
 
 class UserAgent(object):

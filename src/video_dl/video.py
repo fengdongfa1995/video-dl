@@ -159,7 +159,7 @@ class Media(object):
         progress = int(self._current_size / self.size * 20)
         print('\r', ConsoleColor.WARNING, '[downloading] ',
               ConsoleColor.OKGREEN,
-              f'[{progress*100/20:3.0f}%]',  # percent
+              f'[{self._current_size/self.size*100:3.0f}%]',  # percent
               f'({self._current_size/1024/1024:6.2f}/',  # current_size
               f'{self.size/1024/1024:6.2f}MB)|',  # total_size
               'x' * progress, '.' * (20 - progress),  # naive progress bar
@@ -329,9 +329,8 @@ class Video(object):
                 print(self.media_collection['video'])
                 v = ask_user(count=1, default=1)
 
-            media = self.media_collection['video'][v - 1]
             self.media_collection['video'].clear()
-            self.add_media(media)
+            self.add_media(self.media_collection['video'][v - 1])
         else:
             # sort item in media collection
             self.media_collection['picture'].sort_media()
@@ -362,8 +361,8 @@ class Video(object):
         # create directory if necessary
         folder = self.get_folder()
         if folder != self.root_folder:
-            if os.path.exists(folder) is False or os.path.isfile(folder):
-                os.mkdir(self.get_folder())
+            if not os.path.exists(folder) or os.path.isfile(folder):
+                os.mkdir(folder)
 
         await self.media_collection['video'].download()
 

@@ -1,8 +1,8 @@
 """Spider for pornhub.com"""
+from video_dl.extractor import Extractor
 from video_dl.spider import Spider
 from video_dl.toolbox import info
-from video_dl.video import Video, Media
-from video_dl.extractor import Extractor
+from video_dl.video import Media
 
 
 class PornhubSpider(Spider):
@@ -23,7 +23,7 @@ class PornhubSpider(Spider):
         resp, _ = await self.fetch_html(target_url)
         extractor = Extractor.create(target_url)
 
-        video = Video(self.session)  # need a session to access internet
+        video = self.create_video()
         video.title = extractor.get_title(resp)
 
         if self.lists:
@@ -33,10 +33,11 @@ class PornhubSpider(Spider):
         mp4_dict = await self.fetch_json(mp4_url)
 
         for mp4 in mp4_dict:
+            quality = mp4['quality']
             video.add_media(Media(**{
                 'url': mp4['videoUrl'],
-                'size': int(mp4['quality']),
-                'desc': mp4['quality'] + 'p',
+                'size': int(quality),
+                'desc': f'{quality}P',
             }))
 
         self.video_list.append(video)

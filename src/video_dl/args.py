@@ -7,7 +7,6 @@ Typical usage:
 
 Available arguments:
     big_file_threshold: file size exceeds this threshold will be sliced.
-    chunk_size: chunk size to read from stream.
     cookie: user's own cookie.
     directory: set a target directory to save video.
     interactive: choose media resource manually.
@@ -33,7 +32,6 @@ class Config(object):
         Args:
             file_path: json file path, default: resource/config.json
         """
-        # set config file's absolute path
         if file_path is None:
             file_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -90,7 +88,6 @@ class ArgParse(object):
         parser.add_argument('-v', '--version',
                             action='version', version=f'%(prog)s {version}')
 
-        # command line arguments parser result
         args = parser.parse_args()
         self.args = vars(args)
 
@@ -103,7 +100,7 @@ class Arguments(object):
     def _if_none_return_empty_string(self, key: str) -> str:
         """if value of the key is None, the return ''."""
         # just find key in self.args
-        # because config file have no key point to None
+        # because config file have no key points to None
         return '' if self.args[key] is None else self.args[key]
 
     @property
@@ -121,7 +118,7 @@ class Arguments(object):
             value = self.config[key]
         elif key in self.args and key not in self.config:
             value = self.args[key]
-        elif key in self.args and key in self.config:
+        else:
             if self.args[key] is None:
                 value = self.config[key]
             else:

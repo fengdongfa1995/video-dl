@@ -14,9 +14,8 @@ class PornhubExtractor(Extractor):
     # re patterns to extract information from html source code
     re_video_show = re.compile(r'VIDEO_SHOW.*?({.*?});')
     re_mp4_url = re.compile(r'player_mp4_seek.*?//.*?;(.*?);flashvars', re.S)
-
-    def __init__(self):
-        self.id2desc = None
+    re_key_value = re.compile('var (.*?)=(.*)')
+    re_drop_char = re.compile('[ +"]')
 
     def get_title(self, resp: str) -> str:
         """get video's title from html source code."""
@@ -30,14 +29,12 @@ class PornhubExtractor(Extractor):
         url_string = re.sub(r'[\n\t]', '', url_string)  # drop extra space
 
         result = {}
-        url = ''
-        re_key_value = re.compile('var (.*?)=(.*)')
-        re_drop_char = re.compile('[ +"]')
+        url = []
         for item in url_string.split(';'):
-            key, value = re_key_value.search(item).groups()
+            key, value = self.re_key_value.search(item).groups()
             if key != 'media_0':  # get tamporary variables
-                result[key] = re_drop_char.sub('', value)
+                result[key] = self.re_drop_char.sub('', value)
             else:
                 for k in value.split('+'):  # ger final url
-                    url += result[k.strip()]
-        return url
+                    url.append(result[k.strip()])
+        return ''.join(url)
