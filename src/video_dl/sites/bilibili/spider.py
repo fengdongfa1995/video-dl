@@ -124,6 +124,10 @@ class BilibiliSpider(Spider):
 
         convertor = Convertor()
         convertor.edit_header(video.title)
-        convertor.json2ass(danmaku_list)
+        for item in danmaku_list:
+            try:
+                convertor.json2ass(item)
+            except KeyError:
+                pass
         video.save_to_disk(convertor.output(), 'ass')
         info('subtitle', 'saved to', video.get_location())

@@ -231,13 +231,14 @@ class MediaCollection(list):
         cmd += ['-codec', 'copy', self.location, '-y']
 
         # call command provided by opration system
-        subprocess.run(cmd,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
-                       check=True)
-
-        # remove temporary files
-        for item in self:
-            os.remove(item.location)
+        try:
+            subprocess.run(cmd,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
+                           check=True)
+            for item in self:
+                os.remove(item.location)
+        except Exception:  # pylint: disable=W0703
+            info('warn', 'check your ffmpeg!')
 
     def sort_media(self, reverse: bool = True) -> None:
         """sort medias in media collection, biggest one will be the first."""

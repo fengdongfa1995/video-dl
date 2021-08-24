@@ -1,6 +1,4 @@
 """convert json subtitles to ass subtitles."""
-import random
-
 from video_dl.danmaku import Danmaku
 
 
@@ -16,7 +14,7 @@ class Convertor(object):
         self.result = []
 
     def edit_header(self, title: str) -> None:
-        self.danmaku.edit_header(title, self.screen_width, self.screen_height)
+        self.danmaku.edit_header(title)
 
     def ms2datetime(self, ms: int) -> str:
         """convert ms to datetime."""
@@ -27,45 +25,33 @@ class Convertor(object):
 
         return f'{hour}:{minute}:{second}.{ms}'
 
-    def json2ass(self, danmaku_list: dict) -> None:
-        for json_data in danmaku_list:
-            random_height = random.randint(0, self.screen_height)
-            try:
-                text = json_data['content']
-                content_len = 12 * len(text)
+    def json2ass(self, json_data: dict) -> None:
+        text = json_data['content']
 
-                if json_data['mode'] in (1, 2, 3, 7, 8, 9):
-                    duration = self.move_time * 1000
-                    move = (r'\an7\move('
-                            f'{self.screen_width}, {random_height},'
-                            f' {-content_len}, {random_height})')
-                elif json_data['mode'] == 6:
-                    duration = self.move_time * 1000
-                    move = (r'\an9\move('
-                            f'0, {random_height}, '
-                            f'{content_len+self.screen_width}, '
-                            f'{random_height})')
-                elif json_data['mode'] == 4:  # bottom
-                    duration = self.fixed_time * 1000
-                    move = (r'\an2\pos('
-                            f'{self.screen_width/2}, {self.screen_height})')
-                elif json_data['mode'] == 5:  # top
-                    duration = self.fixed_time * 1000
-                    move = (r'\an8\pos('
-                            f'{self.screen_width/2},'
-                            ' {random_height})')
+        if json_data['mode'] in (1, 2, 3, 7, 8, 9):
+            duration = self.move_time * 1000
+            mode = 'normal'
+        elif json_data['mode'] == 6:
+            duration = self.move_time * 1000
+            mode = 'reverse'
+        elif json_data['mode'] == 4:  # bottom
+            duration = self.fixed_time * 1000
+            mode = 'bottom'
+        elif json_data['mode'] == 5:  # top
+            duration = self.fixed_time * 1000
+            mode = 'top'
 
-                color = r'\c&H' + str(hex(json_data['color']))[-6:] + '&'
-                code = f'{{{move}{color}}}'
+        start = self.ms2datetime(json_data['progress'])
+        end = self.ms2datetime(json_data['progress'] + duration)
+        color = r'\c&H' + str(hex(json_data['color']))[-6:] + '&'
 
-                start = self.ms2datetime(json_data['progress'])
-                end = self.ms2datetime(json_data['progress'] + duration)
-
-                self.result.append(
-                    f'Dialogue: 0,{start},{end},Danmaku,,0,0,0,,{code}{text}'
-                )
-            except Exception:  # pylint: disable=W0703
-                continue
+        self.danmaku.add_dialog(self.danmaku.generate_dialog(**{
+            'start': start,
+            'end': end,
+            'mode': mode,
+            'content': text,
+            'color': color,
+        }))
 
     def output(self) -> str:
         return self.danmaku.output_subtitle()
