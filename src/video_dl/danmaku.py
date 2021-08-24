@@ -1,4 +1,19 @@
-"""parse danmaku."""
+r"""generate Advanced SubStation Alpha(ASS) subtitles from meta data.
+
+Typical usage:
+    danmaku = Danmaku()
+    meta_data = {
+        'start': '0:0:0.23',
+        'end': '0:0:0.45',
+        'mode': 'top',
+        'content': 'lol',
+        'fontsize': r'\fs23',
+        'color': r'\c&HFFFFFF&'
+    }
+    dia_log = danmaku.genera_dialog(**meta_data)
+    danmaku.add(dia_log)
+    danmaku.output_subtitle()
+"""
 from typing import Optional
 import os
 import random
@@ -41,11 +56,12 @@ class Danmaku(object):
         self.subtitles.append(self.ass_header)
 
     # TODO: advanced algorithm
-    def generate_dialog(self, start: str, end: str, mode: str, content: str,
+    def generate_dialog(self, *, start: str, end: str, mode: str, content: str,
                         fontsize: Optional[str] = '',
                         color: Optional[str] = '',
                         ) -> str:
-        height = random.randint(0, self.screen_height)
+        """generate dialog with meta data."""
+        height = random.randint(0, self.screen_height)  # need to improve
         content_len = 12 * len(content)
 
         if mode == 'normal':

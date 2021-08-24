@@ -92,6 +92,11 @@ class Spider(object):
         ) as r:
             return await r.read()
 
+    async def get_resp_headers(self, url: str) -> dict:
+        """get responce's headers"""
+        async with self.session.get(url=url, proxy=self.proxy) as r:
+            return r.headers
+
     async def fetch_json(self, url: str) -> dict:
         """fetch json from url."""
         async with self.session.get(url=url, proxy=self.proxy) as r:

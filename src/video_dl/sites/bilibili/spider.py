@@ -130,4 +130,4 @@ class BilibiliSpider(Spider):
             except KeyError:
                 pass
         video.save_to_disk(convertor.output(), 'ass')
-        info('subtitle', 'saved to', video.get_location())
+        info('subtitle', 'save to', video.get_folder())

@@ -1,4 +1,4 @@
-"""read config from config file and user's input, then return the result.
+"""read config from config file and user's input, then return the arguments.
 
 Typical usage:
     args = Arguments()
