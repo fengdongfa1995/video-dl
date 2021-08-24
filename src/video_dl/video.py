@@ -330,8 +330,9 @@ class Video(object):
                 print(self.media_collection['video'])
                 v = ask_user(count=1, default=1)
 
+            media = self.media_collection['video'][v - 1]
             self.media_collection['video'].clear()
-            self.add_media(self.media_collection['video'][v - 1])
+            self.add_media(media)
         else:
             # sort item in media collection
             self.media_collection['picture'].sort_media()
