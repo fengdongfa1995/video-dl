@@ -6,7 +6,7 @@
 ## Prerequisites
 - [ffmpeg](https://ffmpeg.org/) used to merge picture and sound to a complete video.
 - [python](https://www.python.org) 3.8 or above (required by `:=` operator).
-- [Node.js](https://nodejs.org/en/) to support to run javascript code in Python.
+- [Node.js](https://nodejs.org/en/) used to run javascript code locally.
 
 You could check [help manual](https://github.com/fengdongfa1995/video-dl/wiki/How-to-install-system-dependences) 
 in [wiki](https://github.com/fengdongfa1995/video-dl/wiki) to install these system dependencies.
