@@ -262,10 +262,10 @@ class Video(object):
             client_session: session used to access web.
             suffix: the suffix of video file. default: mp4.
         """
-        if session.get() is None:
+        if not session.get():
             session.set(client_session)
 
-        if semaphore.get() is None:
+        if not semaphore.get():
             semaphore.set(asyncio.Semaphore(self.max_conn))
 
         # attributes read from config file or user's input
@@ -275,7 +275,7 @@ class Video(object):
         # attributes should be set by spider
         self.suffix = suffix
         self.parent_folder = None
-        self.title = None
+        self._title = None
 
         # media collection used to hold url and target location
         self.media_collection = {
@@ -287,6 +287,16 @@ class Video(object):
         # used to hold something else
         self.meta_data = {}
 
+    @property
+    def title(self) -> str:
+        return self._title
+
+    @title.setter
+    def title(self, value: str) -> None:
+        for char in ['?', '*', ':', '"', '<', '>', '\\', '/', '|']:
+            value = value.replace(char, ' ')
+        self._title = value
+
     def get_folder(self) -> str:
         """return video's store folder."""
         if self.parent_folder is not None and self.use_parent_folder is True:
@@ -295,7 +305,7 @@ class Video(object):
 
     def get_location(self) -> str:
         """return video's store location."""
-        return os.path.join(self.get_folder(), f'{self.title}.{self.suffix}')
+        return os.path.join(self.get_folder(), f'{self._title}.{self.suffix}')
 
     def add_media(self, media: Media, target: Optional[str] = 'video') -> None:
         """add a media to the specific media collection.
@@ -309,15 +319,8 @@ class Video(object):
             self.media_collection[target].location = self.get_location()
         self.media_collection[target].add_media(media)
 
-    def choose_collection(self) -> MediaCollection:
-        """choose download task from media collection.
-
-        Args:
-            flag: Do you want to choose media by yourself?
-
-        Returns:
-            download task
-        """
+    def choose_collection(self) -> None:
+        """choose download task from media collection."""
         if len(self.media_collection['video']) != 0:
             self.media_collection['video'].sort_media()
 
