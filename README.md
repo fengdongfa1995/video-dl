@@ -5,7 +5,8 @@
 
 ## Prerequisites
 - [ffmpeg](https://ffmpeg.org/) used to merge picture and sound to a complete video.
-- [python](https://www.python.org) 3.8 or above (required by `:=` oprator).
+- [python](https://www.python.org) 3.8 or above (required by `:=` operator).
+- [Node.js](https://nodejs.org/en/) to support to run javascript code in Python.
 
 You could check [help manual](https://github.com/fengdongfa1995/video-dl/wiki/How-to-install-system-dependences) 
 in [wiki](https://github.com/fengdongfa1995/video-dl/wiki) to install these system dependencies.
@@ -92,6 +93,7 @@ You could find how to install system prerequisites, FAQ and something else in [g
 # Supported websites
 - [哔哩哔哩 (゜-゜)つロ 干杯~](https://www.bilibili.com/)
 - [Free Porn Videos & Sex Movies](https://cn.pornhub.com/)
+- [西瓜视频 - 高清免费在线视频 - 点亮对生活的好奇心](https://www.ixigua.com/)
 
 # How was this shit created?
 - [在B站学习用Python做一个B站爬虫](https://www.bilibili.com/video/BV1nv411T798/)
@@ -99,4 +101,4 @@ You could find how to install system prerequisites, FAQ and something else in [g
 # Getting Involved
 You could discuss with me in [github's Discussions](https://github.com/fengdongfa1995/video-dl/discussions),
 find bugs or submit your excelent ideas in [github's Issues](https://github.com/fengdongfa1995/video-dl/issues),
-my last and the biggest wish is getting your [pull requests](https://github.com/fengdongfa1995/video-dl/pulls) to improve this naive tool.
+my last but the biggest wish is getting your [pull requests](https://github.com/fengdongfa1995/video-dl/pulls) to improve this naive tool.

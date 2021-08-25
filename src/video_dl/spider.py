@@ -76,9 +76,9 @@ class Spider(object):
     def create_video(self) -> Video:
         return Video(self.session)
 
-    async def fetch_html(self, url: str) -> tuple:
+    async def fetch_html(self, url: str, **kwargs) -> tuple:
         """get url's html source code from internet."""
-        async with self.session.get(url=url, proxy=self.proxy) as r:
+        async with self.session.get(url=url, proxy=self.proxy, **kwargs) as r:
             # maybe exist redirection
             # TODO: watch out more redirections to modify index in r.history
             if r.history:
@@ -91,11 +91,6 @@ class Spider(object):
             url=url, proxy=self.proxy, params=params
         ) as r:
             return await r.read()
-
-    async def get_resp_headers(self, url: str) -> dict:
-        """get responce's headers"""
-        async with self.session.get(url=url, proxy=self.proxy) as r:
-            return r.headers
 
     async def fetch_json(self, url: str) -> dict:
         """fetch json from url."""

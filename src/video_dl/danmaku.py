@@ -61,7 +61,7 @@ class Danmaku(object):
                         color: Optional[str] = '',
                         ) -> str:
         """generate dialog with meta data."""
-        height = random.randint(0, self.screen_height)  # need to improve
+        height = random.randint(0, self.screen_height)  # need to be improved
         content_len = 12 * len(content)
 
         if mode == 'normal':
@@ -76,6 +76,8 @@ class Danmaku(object):
             move = r'\an2\pos(' + f'{self.screen_width/2}, {height})'
         elif mode == 'top':
             move = r'\an8\pos(' + f'{self.screen_width/2}, {height})'
+        else:
+            raise NotImplementedError
 
         code = f'{{{fontsize}{move}{color}}}'
         return f'Dialogue: 0,{start},{end},Danmaku,,0,0,0,,{code}{content}'
