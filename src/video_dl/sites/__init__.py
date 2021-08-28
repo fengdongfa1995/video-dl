@@ -4,3 +4,4 @@ from .bilibili import (BilibiliVideoExtractor,
 from .pornhub import PornhubSpider, PornhubExtractor
 from .ixigua import IXiGuaSpider, IXiGuaExtractor
 from .xvideos import XVideosSpider, XVideosExtractor
+from .qq import QQSpider

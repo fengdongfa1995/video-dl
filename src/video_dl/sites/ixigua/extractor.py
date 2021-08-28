@@ -18,7 +18,7 @@ class IXiGuaExtractor(Extractor):
     # re patterns to extract information from html source code
     re_video = re.compile(r'window\._SSR_HYDRATED_DATA=(.*?)</script>', re.S)
 
-    def __init__(self, js_path:Optional[str] = None):
+    def __init__(self, js_path: Optional[str] = None):
         super().__init__()
 
         if not js_path:

@@ -15,7 +15,6 @@ Available arguments:
     proxy: internet proxy.
     url: target url.
 """
-from typing import Any
 import argparse
 import json
 import os
@@ -79,17 +78,17 @@ class ArgParse(object):
             help='set proxy. e.g.: http://127.0.0.1:10809',
         )
 
-        # required arguments
+        # required position arguments
         parser.add_argument(
             'url', help='target url copied from online video website.',
         )
 
-        # program's version
+        # print program's version
         parser.add_argument('-v', '--version',
                             action='version', version=f'%(prog)s {version}')
 
-        args = parser.parse_args()
-        self.args = vars(args)
+        # convert arguments parse result to dictionary
+        self.args = vars(parser.parse_args())
 
 
 class Arguments(object):
@@ -107,11 +106,12 @@ class Arguments(object):
     def cookie(self) -> str:
         """
         if user doesn't set a cookie, cookie will be None.
-        but our program need a empty string not the None.
+        but our program need a empty string instead of the None.
         """
         return self._if_none_return_empty_string('cookie')
 
-    def __getattr__(self, key: str) -> Any:
+    def __getattr__(self, key: str) -> str:
+        """return the argument provided by config file or user's input."""
         if key not in self.args and key not in self.config:
             raise KeyError
         elif key not in self.args and key in self.config:
